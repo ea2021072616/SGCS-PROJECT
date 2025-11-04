@@ -12,7 +12,7 @@ class MetodologiasSeeder extends Seeder
      */
     public function run(): void
     {
-        // Insertar metodologías
+        // SOLO DOS METODOLOGÍAS: Scrum y Cascada
         $metodologias = [
             [
                 'nombre' => 'Scrum',
@@ -24,11 +24,6 @@ class MetodologiasSeeder extends Seeder
                 'tipo' => 'secuencial',
                 'descripcion' => 'Metodología tradicional con fases secuenciales y entregables por etapa'
             ],
-            [
-                'nombre' => 'Kanban',
-                'tipo' => 'ágil',
-                'descripcion' => 'Sistema visual de gestión de flujo continuo con límites WIP'
-            ],
         ];
 
         foreach ($metodologias as $metodologia) {
@@ -38,7 +33,6 @@ class MetodologiasSeeder extends Seeder
         // Obtener IDs de metodologías insertadas
         $scrum = DB::table('metodologias')->where('nombre', 'Scrum')->first();
         $cascada = DB::table('metodologias')->where('nombre', 'Cascada')->first();
-        $kanban = DB::table('metodologias')->where('nombre', 'Kanban')->first();
 
         // Fases para SCRUM
         if ($scrum) {
@@ -72,19 +66,5 @@ class MetodologiasSeeder extends Seeder
             }
         }
 
-        // Fases para KANBAN
-        if ($kanban) {
-            $fases_kanban = [
-                ['id_metodologia' => $kanban->id_metodologia, 'nombre_fase' => 'Backlog', 'orden' => 1, 'descripcion' => 'Tareas pendientes por iniciar'],
-                ['id_metodologia' => $kanban->id_metodologia, 'nombre_fase' => 'Selected for Dev', 'orden' => 2, 'descripcion' => 'Tareas seleccionadas para desarrollo'],
-                ['id_metodologia' => $kanban->id_metodologia, 'nombre_fase' => 'In Progress', 'orden' => 3, 'descripcion' => 'Trabajo en curso'],
-                ['id_metodologia' => $kanban->id_metodologia, 'nombre_fase' => 'Review', 'orden' => 4, 'descripcion' => 'En revisión de calidad'],
-                ['id_metodologia' => $kanban->id_metodologia, 'nombre_fase' => 'Done', 'orden' => 5, 'descripcion' => 'Completado y entregado'],
-            ];
-
-            foreach ($fases_kanban as $fase) {
-                DB::table('fases_metodologia')->insertOrIgnore($fase);
-            }
-        }
     }
 }

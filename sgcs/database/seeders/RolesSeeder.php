@@ -12,34 +12,55 @@ class RolesSeeder extends Seeder
      */
     public function run(): void
     {
+        // Roles dignos de un SGCS profesional
         $roles = [
             [
-                'nombre' => 'administrador',
-                'descripcion' => 'Administrador del sistema con acceso completo'
+                'nombre' => 'Gestor de Configuración',
+                'descripcion' => 'Responsable de la gestión de configuración del software (SCM Manager)'
             ],
             [
-                'nombre' => 'lider',
-                'descripcion' => 'Líder de proyecto con permisos de gestión'
+                'nombre' => 'Administrador CCB',
+                'descripcion' => 'Administrador del Comité de Control de Cambios (CCB Administrator)'
             ],
             [
-                'nombre' => 'desarrollador',
-                'descripcion' => 'Desarrollador con acceso a elementos de configuración'
+                'nombre' => 'Líder de Proyecto',
+                'descripcion' => 'Líder técnico y gestor del proyecto (Project Leader)'
             ],
             [
-                'nombre' => 'tester',
-                'descripcion' => 'Tester con acceso a casos de prueba y elementos de QA'
+                'nombre' => 'Product Owner',
+                'descripcion' => 'Dueño del producto, define prioridades y requisitos (PO)'
             ],
             [
-                'nombre' => 'documentador',
-                'descripcion' => 'Documentador con acceso a documentos y artefactos'
+                'nombre' => 'Scrum Master',
+                'descripcion' => 'Facilitador del proceso Scrum y eliminador de impedimentos'
             ],
             [
-                'nombre' => 'auditor',
-                'descripcion' => 'Auditor con acceso de solo lectura para revisiones'
+                'nombre' => 'Desarrollador Senior',
+                'descripcion' => 'Desarrollador con experiencia y capacidad de revisión de código'
             ],
             [
-                'nombre' => 'cliente',
-                'descripcion' => 'Cliente con acceso limitado para seguimiento'
+                'nombre' => 'Desarrollador',
+                'descripcion' => 'Desarrollador de software con acceso a elementos de configuración'
+            ],
+            [
+                'nombre' => 'Analista QA',
+                'descripcion' => 'Analista de aseguramiento de calidad (Quality Assurance)'
+            ],
+            [
+                'nombre' => 'Tester',
+                'descripcion' => 'Responsable de pruebas y validación de software'
+            ],
+            [
+                'nombre' => 'Arquitecto de Software',
+                'descripcion' => 'Diseñador de arquitectura y decisiones técnicas estratégicas'
+            ],
+            [
+                'nombre' => 'Auditor de Configuración',
+                'descripcion' => 'Auditor de cumplimiento de procesos de gestión de configuración'
+            ],
+            [
+                'nombre' => 'Release Manager',
+                'descripcion' => 'Gestor de liberaciones y despliegues a producción'
             ]
         ];
 
