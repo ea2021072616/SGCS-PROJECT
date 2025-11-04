@@ -7,10 +7,14 @@ use App\Models\Proyecto;
 use App\Models\TareaProyecto;
 use App\Models\FaseMetodologia;
 use App\Models\ElementoConfiguracion;
+use App\Models\CommitRepositorio;
+use App\Models\VersionEC;
 use App\Models\Usuario;
+use App\Services\CommitGitHubService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TareaProyectoController extends Controller
 {
@@ -169,28 +173,58 @@ class TareaProyectoController extends Controller
             'sprint' => 'nullable|string|max:50',
             'criterios_aceptacion' => 'nullable|array',
             'notas' => 'nullable|string',
+            'commit_url' => 'nullable|url|max:500',
         ]);
 
-        // Detectar cambio de estado a revisión
+        // Detectar cambio de estado a completado/revisión
         $estadoAnterior = $tarea->estado;
         $estadoNuevo = $validated['estado'] ?? $tarea->estado;
 
-        $tarea->update($validated);
+        DB::beginTransaction();
+        try {
+            // Si la tarea se marca como completada y tiene commit_url
+            if ($this->esEstadoCompletado($estadoNuevo) && !$this->esEstadoCompletado($estadoAnterior)) {
+                // Validar que tenga commit_url
+                if (empty($validated['commit_url'])) {
+                    return back()->withErrors(['commit_url' => 'Debes proporcionar la URL del commit para completar la tarea.'])->withInput();
+                }
 
-        // Si la tarea pasa a revisión Y tiene un EC asociado, cambiar estado del EC
-        if ($this->esEstadoRevision($estadoNuevo) && !$this->esEstadoRevision($estadoAnterior)) {
-            if ($tarea->id_ec) {
-                $ec = ElementoConfiguracion::find($tarea->id_ec);
-                if ($ec && $ec->estado !== 'EN_REVISION') {
-                    $ec->estado = 'EN_REVISION';
-                    $ec->save();
+                // Procesar el commit y crear/actualizar EC
+                $resultado = $this->procesarCompletarTarea($tarea, $validated['commit_url'], $proyecto);
+
+                if (!$resultado['success']) {
+                    DB::rollBack();
+                    return back()->withErrors(['commit_url' => $resultado['message']])->withInput();
+                }
+
+                // Guardar el commit_id generado
+                $validated['commit_id'] = $resultado['commit_id'];
+            }
+
+            // Actualizar la tarea
+            $tarea->update($validated);
+
+            // Si la tarea pasa a revisión Y tiene un EC asociado, cambiar estado del EC
+            if ($this->esEstadoRevision($estadoNuevo) && !$this->esEstadoRevision($estadoAnterior)) {
+                if ($tarea->id_ec) {
+                    $ec = ElementoConfiguracion::find($tarea->id_ec);
+                    if ($ec && $ec->estado !== 'EN_REVISION') {
+                        $ec->estado = 'EN_REVISION';
+                        $ec->save();
+                    }
                 }
             }
-        }
 
-        return redirect()
-            ->route('proyectos.tareas.index', $proyecto)
-            ->with('success', 'Tarea actualizada exitosamente.');
+            DB::commit();
+
+            return redirect()
+                ->route('proyectos.tareas.index', $proyecto)
+                ->with('success', 'Tarea actualizada exitosamente.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al actualizar la tarea: ' . $e->getMessage()])->withInput();
+        }
     }
 
     /**
@@ -204,36 +238,110 @@ class TareaProyectoController extends Controller
         }
 
         // Verificar que el usuario sea el creador del proyecto O el responsable de la tarea
-        $usuarioAutorizado = ($proyecto->creado_por === Auth::user()->id) || 
+        $usuarioAutorizado = ($proyecto->creado_por === Auth::user()->id) ||
                            ($tarea->responsable === Auth::user()->id);
-        
+
         if (!$usuarioAutorizado) {
             return response()->json(['error' => 'No tienes permisos para modificar esta tarea'], 403);
         }
 
         $validated = $request->validate([
-            'estado' => 'required|string',
+            'estado' => 'nullable|string',
+            'id_fase' => 'nullable|exists:fases_metodologia,id_fase',
+            'commit_url' => 'nullable|url|max:500',
         ]);
-
-        // Mapear estados del frontend a estados de la BD
-        $estadosBD = [
-            'Por Hacer' => 'pendiente',
-            'En Progreso' => 'en progreso', 
-            'Finalizado' => 'completado'
-        ];
-
-        $estadoFrontend = $validated['estado'];
-        $estadoBD = $estadosBD[$estadoFrontend] ?? strtolower($estadoFrontend);
 
         $estadoAnterior = $tarea->estado;
-        $tarea->estado = $estadoBD;
-        $tarea->save();
+        $faseAnterior = $tarea->id_fase;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tarea actualizada exitosamente',
-            'tarea' => $tarea->load(['fase', 'elementoConfiguracion', 'responsableUsuario'])
-        ]);
+        // Determinar el nuevo estado
+        if (isset($validated['estado'])) {
+            // Mapear estados del frontend a estados de la BD
+            $estadosBD = [
+                'Por Hacer' => 'PENDIENTE',
+                'En Progreso' => 'EN_PROGRESO',
+                'Finalizado' => 'COMPLETADA',
+                'Completado' => 'COMPLETADA',
+                'Completada' => 'COMPLETADA',
+                'Done' => 'COMPLETADA',
+            ];
+
+            $estadoFrontend = $validated['estado'];
+            $estadoNuevo = $estadosBD[$estadoFrontend] ?? strtoupper(str_replace(' ', '_', $estadoFrontend));
+        } else {
+            // Obtener el nombre de la nueva fase como estado
+            $nuevaFase = FaseMetodologia::find($validated['id_fase'] ?? $tarea->id_fase);
+            $estadoNuevo = $nuevaFase ? $nuevaFase->nombre_fase : $tarea->estado;
+        }
+
+        // VALIDACIÓN: Si se está marcando como completada, DEBE tener commit_url
+        if ($this->esEstadoCompletado($estadoNuevo) && !$this->esEstadoCompletado($estadoAnterior)) {
+            if (empty($validated['commit_url']) && empty($tarea->commit_url)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Se requiere la URL del commit para completar esta tarea',
+                    'requiere_commit' => true,
+                    'tarea_id' => $tarea->id_tarea,
+                ], 422);
+            }
+
+            // Procesar el commit si se proporcionó
+            if (!empty($validated['commit_url'])) {
+                DB::beginTransaction();
+                try {
+                    $resultado = $this->procesarCompletarTarea($tarea, $validated['commit_url'], $proyecto);
+
+                    if (!$resultado['success']) {
+                        DB::rollBack();
+                        return response()->json([
+                            'success' => false,
+                            'error' => $resultado['message'],
+                        ], 422);
+                    }
+
+                    $tarea->commit_url = $validated['commit_url'];
+                    $tarea->commit_id = $resultado['commit_id'];
+
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Error al procesar el commit: ' . $e->getMessage(),
+                    ], 500);
+                }
+            }
+        }
+
+        // Actualizar fase si se proporcionó
+        if (isset($validated['id_fase'])) {
+            $tarea->id_fase = $validated['id_fase'];
+        }
+
+        // Actualizar estado
+        $tarea->estado = $estadoNuevo;
+
+        try {
+            $tarea->save();
+
+            if (isset($resultado)) {
+                DB::commit();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tarea actualizada exitosamente',
+                'tarea' => $tarea->load(['fase', 'elementoConfiguracion', 'responsableUsuario', 'commit'])
+            ]);
+        } catch (\Exception $e) {
+            if (isset($resultado)) {
+                DB::rollBack();
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Error al guardar la tarea: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -277,5 +385,91 @@ class TareaProyectoController extends Controller
     {
         $estadosRevision = ['EN_REVISION', 'In Review', 'Review', 'REVISION'];
         return in_array($estado, $estadosRevision);
+    }
+
+    /**
+     * Verifica si un estado corresponde a "completado"
+     */
+    private function esEstadoCompletado($estado): bool
+    {
+        $estadosCompletados = ['COMPLETADA', 'COMPLETADO', 'Done', 'DONE', 'Completado', 'Finalizado', 'FINALIZADO'];
+        return in_array($estado, $estadosCompletados);
+    }
+
+    /**
+     * Procesa el commit cuando una tarea se completa
+     * Crea o actualiza el EC asociado y registra el commit
+     *
+     * @param TareaProyecto $tarea
+     * @param string $commitUrl
+     * @param Proyecto $proyecto
+     * @return array ['success' => bool, 'message' => string, 'commit_id' => string|null]
+     */
+    private function procesarCompletarTarea(TareaProyecto $tarea, string $commitUrl, Proyecto $proyecto): array
+    {
+        $commitService = new CommitGitHubService();
+
+        // Validar URL del commit
+        if (!$commitService->esUrlCommitValida($commitUrl)) {
+            return [
+                'success' => false,
+                'message' => 'La URL del commit no es válida. Formato esperado: github.com/user/repo/commit/hash',
+                'commit_id' => null,
+            ];
+        }
+
+        // Extraer información del commit
+        $infoCommit = $commitService->extraerInfoCommit($commitUrl);
+
+        // Crear o actualizar Elemento de Configuración
+        if ($tarea->id_ec) {
+            // Ya existe un EC asociado, solo actualizarlo
+            $ec = ElementoConfiguracion::find($tarea->id_ec);
+        } else {
+            // Crear nuevo EC basado en la tarea
+            $countElementos = $proyecto->elementosConfiguracion()->count();
+            $codigoEc = $proyecto->codigo . '-EC-' . str_pad($countElementos + 1, 3, '0', STR_PAD_LEFT);
+
+            $ec = new ElementoConfiguracion();
+            $ec->id = (string) Str::uuid();
+            $ec->proyecto_id = $proyecto->id;
+            $ec->codigo_ec = $codigoEc;
+            $ec->titulo = $tarea->nombre;
+            $ec->descripcion = $tarea->descripcion ?? "Elemento generado desde tarea: {$tarea->nombre}";
+            $ec->tipo = 'CODIGO'; // Por defecto, puede ajustarse según necesidad
+            $ec->creado_por = $tarea->responsable ?? Auth::user()->id;
+        }
+
+        // Cambiar estado a EN_REVISION (esperando aprobación)
+        $ec->estado = 'EN_REVISION';
+        $ec->save();
+
+        // Actualizar la tarea con el EC creado
+        if (!$tarea->id_ec) {
+            $tarea->id_ec = $ec->id;
+        }
+
+        // Registrar el commit en la BD
+        $commit = new CommitRepositorio();
+        $commit->id = (string) Str::uuid();
+        $commit->url_repositorio = $infoCommit['url_repositorio'];
+        $commit->hash_commit = $infoCommit['hash'];
+        $commit->ec_id = $ec->id;
+
+        // Intentar obtener metadata desde GitHub (opcional, se cachea)
+        $datosCommit = $commitService->obtenerDatosCommit($commitUrl);
+        if ($datosCommit) {
+            $commit->autor = $datosCommit['autor'];
+            $commit->mensaje = $datosCommit['mensaje'];
+            $commit->fecha_commit = $datosCommit['fecha_commit'];
+        }
+
+        $commit->save();
+
+        return [
+            'success' => true,
+            'message' => 'Tarea completada y Elemento de Configuración creado/actualizado correctamente.',
+            'commit_id' => $commit->id,
+        ];
     }
 }

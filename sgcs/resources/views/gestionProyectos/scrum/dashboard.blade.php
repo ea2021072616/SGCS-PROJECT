@@ -317,16 +317,15 @@
     </dialog>
 
     <!-- Modal Nuevo Sprint -->
+        <!-- Modal Nuevo Sprint -->
     <dialog id="modalNuevoSprint" class="modal">
         <div class="modal-box bg-white">
-            <h3 class="font-bold text-lg text-black mb-4">Nuevo Sprint</h3>
-
-            <div class="form-control mb-4">
-                <label class="label"><span class="label-text text-black font-semibold">Nombre del Sprint</span></label>
-                <input type="text" id="nombreNuevoSprint" class="input input-bordered w-full bg-white text-black"
-                       placeholder="Sprint {{ $sprints->count() + 1 }}">
+            <h3 class="font-bold text-lg text-black">Nuevo Sprint</h3>
+            <div class="form-control mt-4">
+                <label class="label"><span class="label-text text-black">Nombre del Sprint</span></label>
+                <input type="text" id="nombreNuevoSprint" class="input input-bordered bg-white text-black"
+                       placeholder="Sprint 2">
             </div>
-
             <div class="modal-action">
                 <button type="button" onclick="modalNuevoSprint.close()" class="btn btn-ghost">Cancelar</button>
                 <button type="button" onclick="crearNuevoSprint()" class="btn bg-blue-600 text-white hover:bg-blue-700">Crear Sprint</button>
@@ -334,6 +333,66 @@
         </div>
         <form method="dialog" class="modal-backdrop">
             <button>Cerrar</button>
+        </form>
+    </dialog>
+
+    <!-- Modal para solicitar Commit URL -->
+    <dialog id="modalCommitUrl" class="modal">
+        <div class="modal-box bg-white max-w-2xl">
+            <h3 class="font-bold text-lg text-gray-900 mb-2">✅ Completar Tarea</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                Esta tarea está siendo marcada como <span class="font-bold text-green-600">COMPLETADA</span>.
+                Por favor, proporciona la URL del commit de GitHub que resuelve esta tarea.
+            </p>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-blue-900">Formato de URL esperado:</p>
+                        <code class="text-xs text-blue-800 bg-blue-100 px-2 py-1 rounded mt-1 inline-block">
+                            https://github.com/usuario/repositorio/commit/abc123...
+                        </code>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text text-gray-700 font-semibold">URL del Commit *</span>
+                </label>
+                <input
+                    type="url"
+                    id="inputCommitUrl"
+                    class="input input-bordered w-full bg-white text-gray-900"
+                    placeholder="https://github.com/usuario/repositorio/commit/abc123..."
+                    required
+                />
+                <label class="label">
+                    <span class="label-text-alt text-gray-500">
+                        Pega aquí la URL completa del commit desde GitHub
+                    </span>
+                </label>
+            </div>
+
+            <input type="hidden" id="tareaIdParaCommit">
+            <input type="hidden" id="faseIdParaCommit">
+            <input type="hidden" id="dropZoneParaCommit">
+
+            <div class="modal-action">
+                <button type="button" onclick="cancelarCommit()" class="btn btn-ghost">Cancelar</button>
+                <button type="button" onclick="confirmarCommit()" class="btn bg-green-600 text-white hover:bg-green-700">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Completar Tarea
+                </button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button onclick="cancelarCommit()">Cerrar</button>
         </form>
     </dialog>
 
@@ -370,6 +429,81 @@
         });
 
         function actualizarFaseTarea(tareaId, nuevaFase, dropZone) {
+            // Primero obtener la fase para determinar si es "completada"
+            const columnElement = dropZone.closest('.scrum-column');
+            const faseNombre = columnElement.querySelector('h4')?.textContent.trim() || '';
+
+            // Verificar si la fase indica completado
+            const fasesCompletadas = ['Done', 'Completada', 'Completado', 'Finalizado', 'COMPLETADA', 'DONE'];
+            const esCompletada = fasesCompletadas.some(f => faseNombre.toLowerCase().includes(f.toLowerCase()));
+
+            if (esCompletada) {
+                // Mostrar modal para pedir commit
+                document.getElementById('tareaIdParaCommit').value = tareaId;
+                document.getElementById('faseIdParaCommit').value = nuevaFase;
+                document.getElementById('inputCommitUrl').value = '';
+                modalCommitUrl.showModal();
+            } else {
+                // Actualizar sin commit
+                actualizarSinCommit(tareaId, nuevaFase, dropZone);
+            }
+        }
+
+        function cancelarCommit() {
+            modalCommitUrl.close();
+            location.reload(); // Recargar para revertir el drag
+        }
+
+        function confirmarCommit() {
+            const commitUrl = document.getElementById('inputCommitUrl').value.trim();
+            const tareaId = document.getElementById('tareaIdParaCommit').value;
+            const nuevaFase = document.getElementById('faseIdParaCommit').value;
+
+            if (!commitUrl) {
+                alert('❌ Por favor, ingresa la URL del commit.');
+                return;
+            }
+
+            // Validar que sea de GitHub
+            if (!commitUrl.includes('github.com')) {
+                alert('❌ La URL debe ser de GitHub (github.com)');
+                return;
+            }
+
+            // Validar que sea una URL de commit (no de tree, blob, etc)
+            if (!commitUrl.includes('/commit/')) {
+                let sugerencia = '';
+                if (commitUrl.includes('/tree/')) {
+                    sugerencia = '\n\n💡 Detectamos que es una URL de árbol (/tree/). Por favor, ve al commit específico y copia su URL.';
+                } else if (commitUrl.includes('/blob/')) {
+                    sugerencia = '\n\n💡 Detectamos que es una URL de archivo (/blob/). Por favor, ve al commit específico y copia su URL.';
+                }
+
+                alert('❌ URL inválida. Debe ser una URL de COMMIT de GitHub.\n\n' +
+                    '✅ Formato correcto: https://github.com/usuario/repo/commit/abc123...' +
+                    sugerencia);
+                return;
+            }
+
+            // Validar formato completo con regex
+            const commitRegex = /github\.com\/[^\/]+\/[^\/]+\/commit\/[a-f0-9]+/i;
+            if (!commitRegex.test(commitUrl)) {
+                alert('❌ URL de commit mal formada.\n\n' +
+                    '✅ Formato esperado:\n' +
+                    'https://github.com/usuario/repositorio/commit/hash_del_commit');
+                return;
+            }
+
+            modalCommitUrl.close();
+
+            // Buscar el dropZone
+            const dropZone = document.querySelector(`[data-fase-id="${nuevaFase}"] .scrum-tasks`);
+
+            // Enviar con commit_url
+            actualizarConCommit(tareaId, nuevaFase, commitUrl, dropZone);
+        }
+
+        function actualizarSinCommit(tareaId, nuevaFase, dropZone) {
             fetch(`/proyectos/{{ $proyecto->id }}/tareas/${tareaId}/cambiar-fase`, {
                 method: 'POST',
                 headers: {
@@ -385,10 +519,77 @@
                     const card = document.querySelector(`.scrum-card[data-tarea-id='${tareaId}']`);
                     if (card && dropZone) dropZone.appendChild(card);
                 } else {
-                    alert('Error al mover la tarea: ' + (data.message || ''));
+                    alert('Error al mover la tarea: ' + (data.error || data.message || ''));
+                    location.reload();
                 }
             })
-            .catch(() => alert('Error al mover la tarea'));
+            .catch(() => {
+                alert('Error al mover la tarea');
+                location.reload();
+            });
+        }
+
+        function actualizarConCommit(tareaId, nuevaFase, commitUrl, dropZone) {
+            // Mostrar indicador de carga
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            loadingDiv.innerHTML = `
+                <div class="bg-white rounded-lg p-6 text-center">
+                    <div class="loading loading-spinner loading-lg text-blue-600 mb-4"></div>
+                    <p class="text-gray-700 font-medium">Procesando commit...</p>
+                    <p class="text-sm text-gray-500">Consultando GitHub API</p>
+                </div>
+            `;
+            document.body.appendChild(loadingDiv);
+
+            fetch(`/proyectos/{{ $proyecto->id }}/tareas/${tareaId}/cambiar-fase`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    id_fase: nuevaFase,
+                    commit_url: commitUrl
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                loadingDiv.remove();
+
+                if (data.success) {
+                    // Mostrar mensaje de éxito con detalles
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'fixed top-4 right-4 z-50 max-w-md';
+                    successDiv.innerHTML = `
+                        <div class="alert alert-success shadow-lg">
+                            <div>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div>
+                                    <h3 class="font-bold">¡Tarea completada!</h3>
+                                    <div class="text-xs">Elemento de Configuración creado/actualizado en estado "EN REVISIÓN"</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(successDiv);
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    alert('Error: ' + (data.error || data.message || 'No se pudo procesar el commit'));
+                    location.reload();
+                }
+            })
+            .catch(err => {
+                loadingDiv.remove();
+                alert('Error al procesar la tarea completada: ' + err.message);
+                console.error(err);
+                location.reload();
+            });
         }
 
         // Modal de edición de tarea (básico)

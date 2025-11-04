@@ -370,7 +370,7 @@
                                 </svg>
                                 Ceremonias Scrum
                             </h3>
-                            
+
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <!-- Daily Scrum -->
                                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
@@ -432,7 +432,7 @@
                                     </svg>
                                     Mis User Stories
                                 </h3>
-                                
+
                                 <div class="space-y-3">
                                     @foreach($misTareasScrum->sortBy('prioridad') as $userStory)
                                         <div class="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition">
@@ -512,24 +512,24 @@
                             $fases = \App\Models\FaseMetodologia::where('id_metodologia', $proyecto->id_metodologia)
                                 ->orderBy('orden')
                                 ->get();
-                            
+
                             // Obtener tareas del miembro actual
                             $misTareasCascada = $datosIntegrados['tareas'] ?? collect();
-                            
+
                             // Calcular progreso por fase simulado
                             $progresoFases = [];
                             $totalTareas = $misTareasCascada->count();
                             $tareasPorFase = $totalTareas > 0 ? ceil($totalTareas / max(1, $fases->count())) : 0;
-                            
+
                             foreach($fases as $index => $fase) {
                                 // Simular distribución de tareas por fase
                                 $tareasSimuladas = $misTareasCascada->slice($index * $tareasPorFase, $tareasPorFase);
                                 $completadasFase = $tareasSimuladas->filter(function($t) {
                                     return in_array(strtolower($t->estado), ['completado', 'completada']);
                                 })->count();
-                                
+
                                 $totalFase = $tareasSimuladas->count();
-                                
+
                                 $progresoFases[$fase->id_fase] = [
                                     'fase' => $fase,
                                     'total' => $totalFase,
@@ -538,7 +538,7 @@
                                     'tareas' => $tareasSimuladas
                                 ];
                             }
-                            
+
                             // Encontrar la fase actual (primera fase no completada al 100%)
                             $faseActual = collect($progresoFases)->first(function($progreso) {
                                 return $progreso['progreso'] < 100 && $progreso['total'] > 0;
@@ -653,7 +653,7 @@
                                         </svg>
                                         Mis Tareas en {{ $faseActual['fase']->nombre_fase }}
                                     </h3>
-                                    
+
                                     <div class="space-y-3">
                                         @foreach($faseActual['tareas']->sortBy('prioridad') as $tarea)
                                             <div class="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition">
@@ -776,7 +776,7 @@
                                     </svg>
                                     Mis Tareas del Proyecto
                                 </h3>
-                                
+
                                 <!-- Estadísticas rápidas -->
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                                     @php
@@ -789,7 +789,7 @@
                                         })->count();
                                         $pendientesGen = $totalGen - $completadasGen - $progresoGen;
                                     @endphp
-                                    
+
                                     <div class="bg-blue-50 rounded-lg p-4 text-center">
                                         <div class="text-2xl font-bold text-blue-600">{{ $totalGen }}</div>
                                         <div class="text-sm text-gray-600">Total</div>
@@ -865,20 +865,20 @@
                 @php
                     $misTareas = $datosIntegrados['tareas'] ?? collect();
                     $totalTareas = $misTareas->count();
-                    
+
                     // Normalizar estados - buscar tanto en mayúsculas como minúsculas
                     $tareasCompletadas = $misTareas->filter(function($tarea) {
                         return in_array(strtolower($tarea->estado), ['completado', 'completada']);
                     })->count();
-                    
+
                     $tareasEnProgreso = $misTareas->filter(function($tarea) {
                         return in_array(strtolower($tarea->estado), ['en progreso', 'en_progreso', 'en desarrollo', 'en_desarrollo']);
                     })->count();
-                    
+
                     $tareasPendientes = $misTareas->filter(function($tarea) {
                         return in_array(strtolower($tarea->estado), ['pendiente', 'por hacer', 'nuevo']);
                     })->count();
-                    
+
                     $progresoPersonal = $totalTareas > 0 ? round(($tareasCompletadas / $totalTareas) * 100) : 0;
                 @endphp
 
@@ -965,7 +965,7 @@
                                             return in_array(strtolower($tarea->estado), ['pendiente', 'por hacer', 'nuevo']);
                                         });
                                     @endphp
-                                    
+
                                     @forelse($tareasPendientesColeccion as $tarea)
                                         @include('gestionProyectos.partials.tarea-card', ['tarea' => $tarea, 'proyecto' => $proyecto])
                                     @empty
@@ -996,7 +996,7 @@
                                             return in_array(strtolower($tarea->estado), ['en progreso', 'en_progreso', 'en desarrollo', 'en_desarrollo']);
                                         });
                                     @endphp
-                                    
+
                                     @forelse($tareasProgresoColeccion as $tarea)
                                         @include('gestionProyectos.partials.tarea-card', ['tarea' => $tarea, 'proyecto' => $proyecto])
                                     @empty
@@ -1027,7 +1027,7 @@
                                             return in_array(strtolower($tarea->estado), ['completado', 'completada']);
                                         });
                                     @endphp
-                                    
+
                                     @forelse($tareasCompletadasColeccion as $tarea)
                                         @include('gestionProyectos.partials.tarea-card', ['tarea' => $tarea, 'proyecto' => $proyecto])
                                     @empty
@@ -1142,7 +1142,7 @@
 
         function handleDragEnd(e) {
             this.style.opacity = '1';
-            
+
             // Remover clases de highlight de todas las columnas
             document.querySelectorAll('.kanban-column').forEach(col => {
                 col.classList.remove('bg-indigo-100', 'border-2', 'border-indigo-400', 'border-dashed');
@@ -1175,85 +1175,200 @@
 
             const targetColumn = this;
             const nuevoEstado = targetColumn.dataset.estado;
-            
+
             // Si es la misma columna, no hacer nada
             if (draggedElement.parentElement === targetColumn) {
                 return false;
             }
 
-            // Añadir la tarjeta a la nueva columna
-            targetColumn.appendChild(draggedElement);
+            // Verificar si el nuevo estado es "Completado"
+            const estadosCompletados = ['Completado', 'Completada', 'Finalizado', 'Done', 'COMPLETADA'];
+            const esCompletado = estadosCompletados.some(e => nuevoEstado.toLowerCase().includes(e.toLowerCase()));
 
-            // Actualizar el estado en el servidor
-            actualizarEstadoTarea(draggedTareaId, nuevoEstado);
+            if (esCompletado) {
+                // Mostrar modal para solicitar commit
+                document.getElementById('tareaIdParaCommit').value = draggedTareaId;
+                document.getElementById('estadoParaCommit').value = nuevoEstado;
+                document.getElementById('inputCommitUrl').value = '';
 
-            // Actualizar contadores
-            actualizarContadores();
+                // Guardar referencia a la columna destino
+                window.targetColumnForCommit = targetColumn;
+
+                modalCommitUrl.showModal();
+            } else {
+                // Añadir la tarjeta a la nueva columna
+                targetColumn.appendChild(draggedElement);
+
+                // Actualizar el estado en el servidor
+                actualizarEstadoTarea(draggedTareaId, nuevoEstado, null);
+
+                // Actualizar contadores
+                actualizarContadores();
+            }
 
             return false;
         }
 
-        function actualizarEstadoTarea(tareaId, nuevoEstado) {
+        function cancelarCommit() {
+            modalCommitUrl.close();
+            // Recargar para revertir el cambio visual
+            window.location.reload();
+        }
+
+        function confirmarCommit() {
+            const commitUrl = document.getElementById('inputCommitUrl').value.trim();
+            const tareaId = document.getElementById('tareaIdParaCommit').value;
+            const nuevoEstado = document.getElementById('estadoParaCommit').value;
+
+            if (!commitUrl) {
+                mostrarNotificacion('❌ Por favor, ingresa la URL del commit.', 'error');
+                return;
+            }
+
+            // Validar que sea de GitHub
+            if (!commitUrl.includes('github.com')) {
+                mostrarNotificacion('❌ La URL debe ser de GitHub (github.com)', 'error');
+                return;
+            }
+
+            // Validar que sea una URL de commit (no de tree, blob, etc)
+            if (!commitUrl.includes('/commit/')) {
+                let sugerencia = '';
+                if (commitUrl.includes('/tree/')) {
+                    sugerencia = '\n\n💡 Detectamos que es una URL de árbol (/tree/). Por favor, ve al commit específico y copia su URL.';
+                } else if (commitUrl.includes('/blob/')) {
+                    sugerencia = '\n\n💡 Detectamos que es una URL de archivo (/blob/). Por favor, ve al commit específico y copia su URL.';
+                }
+
+                mostrarNotificacion('❌ URL inválida. Debe ser una URL de COMMIT de GitHub.\n\n' +
+                    '✅ Formato correcto: https://github.com/usuario/repo/commit/abc123...' +
+                    sugerencia, 'error');
+                return;
+            }
+
+            // Validar formato completo con regex
+            const commitRegex = /github\.com\/[^\/]+\/[^\/]+\/commit\/[a-f0-9]+/i;
+            if (!commitRegex.test(commitUrl)) {
+                mostrarNotificacion('❌ URL de commit mal formada.\n\n' +
+                    '✅ Formato esperado:\n' +
+                    'https://github.com/usuario/repositorio/commit/hash_del_commit', 'error');
+                return;
+            }
+
+            modalCommitUrl.close();
+
+            // Añadir la tarjeta a la nueva columna
+            if (window.targetColumnForCommit && draggedElement) {
+                window.targetColumnForCommit.appendChild(draggedElement);
+            }
+
+            // Actualizar el estado en el servidor CON commit_url
+            actualizarEstadoTarea(tareaId, nuevoEstado, commitUrl);
+
+            // Actualizar contadores
+            actualizarContadores();
+        }
+
+        function actualizarEstadoTarea(tareaId, nuevoEstado, commitUrl = null) {
             // Mostrar indicador de carga
             const card = document.querySelector(`[data-tarea-id="${tareaId}"]`);
             const originalBorder = card.style.borderColor;
             card.style.borderColor = '#6366f1';
             card.style.borderWidth = '2px';
 
-            // Crear formulario para enviar la solicitud
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/proyectos/{{ $proyecto->id }}/tareas/${tareaId}/cambiar-fase`;
-            
+            // Crear FormData para enviar la solicitud
+            const formData = new FormData();
+
             // Token CSRF
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '_token';
-            csrfInput.value = csrfToken;
-            form.appendChild(csrfInput);
+            formData.append('_token', csrfToken);
+            formData.append('estado', nuevoEstado);
 
-            // Estado
-            const estadoInput = document.createElement('input');
-            estadoInput.type = 'hidden';
-            estadoInput.name = 'estado';
-            estadoInput.value = nuevoEstado;
-            form.appendChild(estadoInput);
+            // Agregar commit_url si está presente
+            if (commitUrl) {
+                formData.append('commit_url', commitUrl);
 
-            // Enviar mediante fetch en lugar de submit directo para mejor UX
-            const formData = new FormData(form);
-            
-            fetch(form.action, {
+                // Mostrar indicador de carga más prominente para commits
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loading-commit';
+                loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                loadingDiv.innerHTML = `
+                    <div class="bg-white rounded-lg p-6 text-center max-w-sm">
+                        <div class="loading loading-spinner loading-lg text-blue-600 mb-4 mx-auto"></div>
+                        <p class="text-gray-700 font-medium">Procesando commit...</p>
+                        <p class="text-sm text-gray-500 mt-2">Consultando GitHub API y creando Elemento de Configuración</p>
+                    </div>
+                `;
+                document.body.appendChild(loadingDiv);
+            }
+
+            fetch(`/proyectos/{{ $proyecto->id }}/tareas/${tareaId}/cambiar-fase`, {
                 method: 'POST',
                 body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => {
-                if (response.ok) {
+            .then(response => response.json())
+            .then(data => {
+                // Remover loading si existe
+                const loadingDiv = document.getElementById('loading-commit');
+                if (loadingDiv) {
+                    loadingDiv.remove();
+                }
+
+                if (data.success) {
                     // Éxito: mostrar feedback visual
                     card.style.borderColor = '#10b981';
                     setTimeout(() => {
                         card.style.borderColor = originalBorder;
                         card.style.borderWidth = '2px';
                     }, 1000);
-                    
-                    // ACTUALIZAR CONTADORES Y ESTADÍSTICAS EN TIEMPO REAL
+
+                    // Actualizar contadores
                     actualizarContadores();
-                    
-                    // Mostrar notificación de éxito
-                    mostrarNotificacion('✅ Estado actualizado correctamente', 'success');
+
+                    // Mensaje diferente si se procesó un commit
+                    if (commitUrl) {
+                        const successDiv = document.createElement('div');
+                        successDiv.className = 'fixed top-4 right-4 z-50 max-w-md';
+                        successDiv.innerHTML = `
+                            <div class="alert alert-success shadow-lg">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div>
+                                        <h3 class="font-bold">¡Tarea completada!</h3>
+                                        <div class="text-xs">Elemento de Configuración creado/actualizado en estado "EN REVISIÓN"</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(successDiv);
+
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        mostrarNotificacion('✅ Estado actualizado correctamente', 'success');
+                    }
                 } else {
-                    throw new Error('Error al actualizar');
+                    throw new Error(data.error || data.message || 'Error al actualizar');
                 }
             })
             .catch(error => {
+                // Remover loading si existe
+                const loadingDiv = document.getElementById('loading-commit');
+                if (loadingDiv) {
+                    loadingDiv.remove();
+                }
+
                 // Error: revertir el cambio
                 console.error('Error:', error);
                 card.style.borderColor = '#ef4444';
-                mostrarNotificacion('❌ Error al actualizar el estado. Recargando página...', 'error');
-                
+                mostrarNotificacion('❌ Error al actualizar el estado. ' + error.message + '. Recargando página...', 'error');
+
                 // Recargar la página después de 2 segundos
                 setTimeout(() => {
                     window.location.reload();
@@ -1264,12 +1379,12 @@
         function actualizarContadores() {
             // Actualizar contadores en las cabeceras de columnas del Kanban
             const columnas = document.querySelectorAll('.kanban-column');
-            
+
             columnas.forEach(columna => {
                 const estado = columna.dataset.estado;
                 const contador = columna.previousElementSibling?.querySelector('.rounded-full');
                 const numTareas = columna.querySelectorAll('.tarea-card').length;
-                
+
                 if (contador) {
                     contador.textContent = numTareas;
                 }
@@ -1280,10 +1395,10 @@
             const totalProgreso = document.querySelectorAll('#columna-progreso .tarea-card').length;
             const totalCompletado = document.querySelectorAll('#columna-completado .tarea-card').length;
             const totalTareas = totalPendientes + totalProgreso + totalCompletado;
-            
+
             // Calcular progreso
             const progreso = totalTareas > 0 ? Math.round((totalCompletado / totalTareas) * 100) : 0;
-            
+
             // Actualizar las estadísticas usando IDs específicos
             const statTotalTareas = document.getElementById('stat-total-tareas');
             const statCompletadas = document.getElementById('stat-completadas');
@@ -1291,14 +1406,14 @@
             const statMiProgreso = document.getElementById('stat-mi-progreso');
             const statProgresoIcon = document.getElementById('stat-progreso-icon');
             const statProgressBar = document.getElementById('stat-progress-bar');
-            
+
             if (statTotalTareas) statTotalTareas.textContent = totalTareas;
             if (statCompletadas) statCompletadas.textContent = totalCompletado;
             if (statEnProgreso) statEnProgreso.textContent = totalProgreso;
             if (statMiProgreso) statMiProgreso.textContent = progreso + '%';
             if (statProgresoIcon) statProgresoIcon.textContent = progreso + '%';
             if (statProgressBar) statProgressBar.style.width = progreso + '%';
-            
+
             console.log('Estadísticas actualizadas:', {
                 total: totalTareas,
                 completadas: totalCompletado,
@@ -1375,4 +1490,76 @@
     </script>
 
     @endif
+
+    <!-- Modal para solicitar Commit URL cuando se completa una tarea -->
+    <dialog id="modalCommitUrl" class="modal">
+        <div class="modal-box bg-white max-w-3xl">
+            <h3 class="font-bold text-lg text-gray-900 mb-2">✅ Completar Tarea</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                Esta tarea está siendo marcada como <span class="font-bold text-green-600">COMPLETADA</span>.
+                Por favor, proporciona la URL del commit de GitHub que resuelve esta tarea.
+            </p>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-blue-900 mb-2">Cómo obtener la URL correcta:</p>
+                        <ol class="text-xs text-blue-800 space-y-1 list-decimal list-inside">
+                            <li>Ve a tu repositorio en GitHub</li>
+                            <li>Click en "<strong>Commits</strong>" o "<strong>History</strong>"</li>
+                            <li>Busca tu commit y haz click en él</li>
+                            <li>Copia la URL de la barra de direcciones</li>
+                        </ol>
+                        <div class="mt-3 p-2 bg-blue-100 rounded">
+                            <p class="text-xs font-medium text-blue-900">✅ Formato correcto:</p>
+                            <code class="text-xs text-blue-800 block mt-1">
+                                https://github.com/<span class="text-green-700">usuario</span>/<span class="text-green-700">repo</span>/<span class="font-bold text-red-600">/commit/</span><span class="text-purple-700">abc123...</span>
+                            </code>
+                        </div>
+                        <div class="mt-2 p-2 bg-red-50 rounded">
+                            <p class="text-xs font-medium text-red-900">❌ NO usar URLs de:</p>
+                            <code class="text-xs text-red-800 block">/tree/ (rama) • /blob/ (archivo) • /pull/ (PR)</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text text-gray-700 font-semibold">URL del Commit *</span>
+                </label>
+                <input
+                    type="url"
+                    id="inputCommitUrl"
+                    class="input input-bordered w-full bg-white text-gray-900 font-mono text-sm"
+                    placeholder="https://github.com/usuario/repositorio/commit/abc123..."
+                    required
+                />
+                <label class="label">
+                    <span class="label-text-alt text-gray-500">
+                        Pega aquí la URL completa del commit desde GitHub
+                    </span>
+                </label>
+            </div>
+
+            <input type="hidden" id="tareaIdParaCommit">
+            <input type="hidden" id="estadoParaCommit">
+
+            <div class="modal-action">
+                <button type="button" onclick="cancelarCommit()" class="btn btn-ghost">Cancelar</button>
+                <button type="button" onclick="confirmarCommit()" class="btn bg-green-600 text-white hover:bg-green-700">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Completar Tarea
+                </button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button onclick="cancelarCommit()">Cerrar</button>
+        </form>
+    </dialog>
 </x-app-layout>

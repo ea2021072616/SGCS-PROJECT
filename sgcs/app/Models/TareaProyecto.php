@@ -36,6 +36,9 @@ class TareaProyecto extends Model
         'criterios_aceptacion',
         'notas',
         'creado_por',
+        // Campos de commit
+        'commit_url',
+        'commit_id',
         // Campos de cronograma inteligente
         'duracion_minima',
         'es_ruta_critica',
@@ -105,6 +108,14 @@ class TareaProyecto extends Model
     public function sprintModel(): BelongsTo
     {
         return $this->belongsTo(Sprint::class, 'id_sprint', 'id_sprint');
+    }
+
+    /**
+     * Relación con Commit de GitHub
+     */
+    public function commit(): BelongsTo
+    {
+        return $this->belongsTo(CommitRepositorio::class, 'commit_id', 'id');
     }
 
     /**

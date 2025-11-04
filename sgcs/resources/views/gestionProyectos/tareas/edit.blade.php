@@ -326,7 +326,91 @@
                                 @enderror
                             </div>
 
+                            <!-- URL del Commit (se muestra cuando el estado es COMPLETADA) -->
+                            <div class="form-control md:col-span-2" id="commitUrlContainer" style="display: none;">
+                                <label class="label">
+                                    <span class="label-text font-medium text-gray-700">
+                                        URL del Commit *
+                                        <span class="text-sm text-gray-500 font-normal">(Requerido para completar la tarea)</span>
+                                    </span>
+                                </label>
+                                <input
+                                    type="url"
+                                    name="commit_url"
+                                    id="commit_url"
+                                    value="{{ old('commit_url', $tarea->commit_url) }}"
+                                    placeholder="https://github.com/usuario/repositorio/commit/abc123..."
+                                    class="input input-bordered w-full bg-white text-gray-900"
+                                />
+                                <label class="label">
+                                    <span class="label-text-alt text-gray-600">
+                                        Pega aquí la URL del commit de GitHub que completa esta tarea
+                                    </span>
+                                </label>
+                                @error('commit_url')
+                                    <label class="label">
+                                        <span class="label-text-alt text-error">{{ $message }}</span>
+                                    </label>
+                                @enderror
+                            </div>
+
+                            @if($tarea->commit)
+                                <!-- Información del commit existente -->
+                                <div class="md:col-span-2 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span class="font-semibold text-green-800">Commit Asociado</span>
+                                    </div>
+                                    <div class="space-y-1 text-sm text-gray-700">
+                                        <p><strong>Hash:</strong> <code class="bg-white px-2 py-1 rounded">{{ Str::limit($tarea->commit->hash_commit, 12, '') }}</code></p>
+                                        @if($tarea->commit->mensaje)
+                                            <p><strong>Mensaje:</strong> {{ $tarea->commit->mensaje }}</p>
+                                        @endif
+                                        @if($tarea->commit->autor)
+                                            <p><strong>Autor:</strong> {{ $tarea->commit->autor }}</p>
+                                        @endif
+                                        <p>
+                                            <a href="{{ $tarea->commit->url_repositorio }}/commit/{{ $tarea->commit->hash_commit }}"
+                                               target="_blank"
+                                               class="text-blue-600 hover:underline inline-flex items-center gap-1">
+                                                Ver en GitHub
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                </svg>
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+
                         </div>
+
+                        <script>
+                            // Mostrar/ocultar campo commit_url según el estado seleccionado
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const estadoSelect = document.querySelector('select[name="estado"]');
+                                const commitContainer = document.getElementById('commitUrlContainer');
+                                const commitInput = document.getElementById('commit_url');
+
+                                function toggleCommitField() {
+                                    const estadoSeleccionado = estadoSelect.value;
+                                    const estadosCompletados = ['COMPLETADA', 'COMPLETADO', 'Done', 'DONE', 'Completado', 'Finalizado', 'FINALIZADO'];
+
+                                    if (estadosCompletados.includes(estadoSeleccionado)) {
+                                        commitContainer.style.display = 'block';
+                                        commitInput.required = true;
+                                    } else {
+                                        commitContainer.style.display = 'none';
+                                        commitInput.required = false;
+                                    }
+                                }
+
+                                estadoSelect.addEventListener('change', toggleCommitField);
+                                toggleCommitField(); // Ejecutar al cargar la página
+                            });
+                        </script>
 
                         <!-- Botones de Acción -->
                         <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
