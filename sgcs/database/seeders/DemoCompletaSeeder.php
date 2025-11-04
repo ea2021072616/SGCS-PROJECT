@@ -578,6 +578,8 @@ class DemoCompletaSeeder extends Seeder
                 'id_fase' => $fase->id_fase,
                 'responsable' => $tareaInfo['responsable']?->id,
             ], [
+                'nombre' => $tareaInfo['titulo'],
+                'descripcion' => 'Tarea: ' . $tareaInfo['titulo'],
                 'fecha_inicio' => $fechaInicio,
                 'fecha_fin' => $fechaFin,
                 'estado' => $tareaInfo['estado'],
@@ -985,6 +987,8 @@ class DemoCompletaSeeder extends Seeder
                 'id_fase' => $fase->id_fase,
                 'responsable' => $tareaInfo['responsable']?->id,
             ], [
+                'nombre' => $tareaInfo['titulo'],
+                'descripcion' => 'Tarea: ' . $tareaInfo['titulo'],
                 'fecha_inicio' => $fechaInicio,
                 'fecha_fin' => $fechaFin,
                 'estado' => $estadoTarea,
