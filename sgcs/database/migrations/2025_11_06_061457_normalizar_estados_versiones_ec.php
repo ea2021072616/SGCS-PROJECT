@@ -24,18 +24,14 @@ return new class extends Migration
 
         // Modificar la columna para usar los estados normalizados
         Schema::table('versiones_ec', function (Blueprint $table) {
-            $table->enum('estado', ['BORRADOR', 'EN_REVISION', 'APROBADO', 'LIBERADO', 'OBSOLETO'])
+            $table->enum('estado', ['PENDIENTE','BORRADOR','EN_REVISION','APROBADO','LIBERADO','OBSOLETO'])
                 ->default('BORRADOR')
                 ->change();
         });
 
-        // Normalizar también elementos_configuracion (eliminar PENDIENTE, usar BORRADOR como default)
-        DB::table('elementos_configuracion')
-            ->where('estado', 'PENDIENTE')
-            ->update(['estado' => 'BORRADOR']);
-
+        // Normalizar también elementos_configuracion (mantener PENDIENTE)
         Schema::table('elementos_configuracion', function (Blueprint $table) {
-            $table->enum('estado', ['BORRADOR', 'EN_REVISION', 'APROBADO', 'LIBERADO', 'OBSOLETO'])
+            $table->enum('estado', ['PENDIENTE','BORRADOR','EN_REVISION','APROBADO','LIBERADO','OBSOLETO'])
                 ->default('BORRADOR')
                 ->change();
         });

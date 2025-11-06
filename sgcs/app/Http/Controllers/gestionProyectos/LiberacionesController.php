@@ -103,7 +103,7 @@ class LiberacionesController extends Controller
      */
     public function show(Proyecto $proyecto, Liberacion $liberacion)
     {
-        $liberacion->load(['items.elementoConfiguracion.tipo', 'items.versionEc']);
+        $liberacion->load(['items.elementoConfiguracion', 'items.versionEc']);
 
         return view('liberaciones.show', compact('proyecto', 'liberacion'));
     }

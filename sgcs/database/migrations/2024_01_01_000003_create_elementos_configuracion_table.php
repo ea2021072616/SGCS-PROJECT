@@ -20,7 +20,7 @@ return new class extends Migration
             $table->enum('tipo', ['DOCUMENTO', 'CODIGO', 'SCRIPT_BD', 'CONFIGURACION', 'OTRO'])->default('OTRO');
             $table->char('version_actual_id', 36)->nullable();
             $table->char('creado_por', 36)->nullable();
-            $table->enum('estado', ['PENDIENTE','BORRADOR', 'EN_REVISION', 'APROBADO', 'LIBERADO', 'OBSOLETO'])->default('PENDIENTE');
+            $table->enum('estado', ['PENDIENTE','BORRADOR','EN_REVISION','APROBADO','LIBERADO','OBSOLETO'])->default('BORRADOR');
             $table->timestamp('creado_en')->useCurrent();
             $table->timestamp('actualizado_en')->useCurrent()->useCurrentOnUpdate();
 
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->text('registro_cambios')->nullable();
             $table->char('commit_id', 36)->nullable();
             $table->json('metadatos')->nullable();
-            $table->enum('estado', ['PENDIENTE','BORRADOR','REVISION','APROBADO','LIBERADO','DEPRECADO'])->default('PENDIENTE');
+            $table->enum('estado', ['PENDIENTE','BORRADOR','EN_REVISION','APROBADO','LIBERADO','DEPRECADO'])->default('BORRADOR');
             $table->char('creado_por', 36)->nullable();
             $table->char('aprobado_por', 36)->nullable();
             $table->timestamp('creado_en')->useCurrent();

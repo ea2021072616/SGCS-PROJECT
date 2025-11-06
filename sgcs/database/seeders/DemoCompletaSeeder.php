@@ -32,10 +32,10 @@ class DemoCompletaSeeder extends Seeder
         // ============================================
         // 1. OBTENER DATOS BASE
         // ============================================
-        
+
         $scrum = DB::table('metodologias')->where('nombre', 'Scrum')->first();
         $cascada = DB::table('metodologias')->where('nombre', 'Cascada')->first();
-        
+
         if (!$scrum || !$cascada) {
             $this->command->error('❌ Ejecuta primero MetodologiasSeeder');
             return;
@@ -58,9 +58,9 @@ class DemoCompletaSeeder extends Seeder
         // ============================================
         // 2. CREAR PROYECTO SCRUM COMPLETO
         // ============================================
-        
+
         $this->command->info('🚀 Creando Proyecto SCRUM...');
-        
+
         $proyectoScrum = Proyecto::firstOrCreate(['codigo' => 'ECOM-2024'], [
             'id' => Str::uuid()->toString(),
             'nombre' => 'E-Commerce Platform',
@@ -95,7 +95,7 @@ class DemoCompletaSeeder extends Seeder
         foreach ($miembrosScrum as $miembro) {
             $usuario = Usuario::where('correo', $miembro['correo'])->first();
             $rol = $roles[$miembro['rol']] ?? null;
-            
+
             if ($usuario && $rol) {
                 MiembroEquipo::firstOrCreate([
                     'equipo_id' => $equipoScrum->id,
@@ -124,9 +124,9 @@ class DemoCompletaSeeder extends Seeder
         // ============================================
         // 3. CREAR PROYECTO CASCADA COMPLETO
         // ============================================
-        
+
         $this->command->info('🏗️  Creando Proyecto CASCADA...');
-        
+
         $proyectoCascada = Proyecto::firstOrCreate(['codigo' => 'ERP-2024'], [
             'id' => Str::uuid()->toString(),
             'nombre' => 'Sistema ERP Corporativo',
@@ -162,7 +162,7 @@ class DemoCompletaSeeder extends Seeder
         foreach ($miembrosCascada as $miembro) {
             $usuario = Usuario::where('correo', $miembro['correo'])->first();
             $rol = $roles[$miembro['rol']] ?? null;
-            
+
             if ($usuario && $rol) {
                 MiembroEquipo::firstOrCreate([
                     'equipo_id' => $equipoCascada->id,
@@ -190,9 +190,9 @@ class DemoCompletaSeeder extends Seeder
         // ============================================
         // 4. PROYECTOS ADICIONALES (para llenar)
         // ============================================
-        
+
         $this->command->info('📦 Creando proyectos adicionales...');
-        
+
         $proyectosAdicionales = [
             [
                 'codigo' => 'MOB-2024',
@@ -259,7 +259,7 @@ class DemoCompletaSeeder extends Seeder
 
         // Versión del Product Backlog
         VersionEc::firstOrCreate(
-            ['ec_id' => $productBacklog->id, 'version' => '1.0'],
+            ['ec_id' => $productBacklog->id, 'version' => '1.0.0'],
             [
                 'id' => Str::uuid()->toString(),
                 'registro_cambios' => 'Versión inicial con 45 historias de usuario priorizadas',
@@ -612,7 +612,7 @@ class DemoCompletaSeeder extends Seeder
         $elementos[] = $srs;
 
         VersionEc::firstOrCreate(
-            ['ec_id' => $srs->id, 'version' => '2.1'],
+            ['ec_id' => $srs->id, 'version' => '2.1.0'],
             [
                 'id' => Str::uuid()->toString(),
                 'registro_cambios' => 'Revisión aprobada con 125 requisitos funcionales y 38 no funcionales',

@@ -187,8 +187,9 @@
                             </label>
                             <select name="estado" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 @error('estado') border-red-500 @enderror" required>
                                 <option value="">Seleccionar estado...</option>
+                                <option value="PENDIENTE" {{ old('estado') === 'PENDIENTE' ? 'selected' : '' }}>⏳ Pendiente</option>
                                 <option value="BORRADOR" {{ old('estado') === 'BORRADOR' ? 'selected' : '' }}>📝 Borrador</option>
-                                <option value="REVISION" {{ old('estado') === 'REVISION' ? 'selected' : '' }}>🔍 En Revisión</option>
+                                <option value="EN_REVISION" {{ old('estado') === 'EN_REVISION' ? 'selected' : '' }}>🔍 En Revisión</option>
                                 <option value="APROBADO" {{ old('estado') === 'APROBADO' ? 'selected' : '' }}>✅ Aprobado</option>
                                 <option value="LIBERADO" {{ old('estado') === 'LIBERADO' ? 'selected' : '' }}>🚀 Liberado</option>
                             </select>

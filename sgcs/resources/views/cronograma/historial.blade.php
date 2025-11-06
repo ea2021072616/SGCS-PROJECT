@@ -162,11 +162,11 @@
                                 <div class="flex items-center gap-4">
                                     <span>📅 {{ $ajuste->created_at->format('d/m/Y H:i') }}</span>
                                     <span>👤 {{ $ajuste->creador->nombre ?? 'Sistema' }}</span>
-                                    @if($ajuste->aprobador)
-                                    <span>✓ {{ $ajuste->aprobador->nombre }} ({{ $ajuste->fecha_aprobacion->format('d/m/Y') }})</span>
+                                    @if($ajuste->aprobador && $ajuste->fecha_aprobacion)
+                                    <span>✓ {{ $ajuste->aprobador->nombre }} ({{ \Carbon\Carbon::parse($ajuste->fecha_aprobacion)->format('d/m/Y') }})</span>
                                     @endif
                                     @if($ajuste->fecha_aplicacion)
-                                    <span>🚀 Aplicado: {{ $ajuste->fecha_aplicacion->format('d/m/Y H:i') }}</span>
+                                    <span>🚀 Aplicado: {{ \Carbon\Carbon::parse($ajuste->fecha_aplicacion)->format('d/m/Y H:i') }}</span>
                                     @endif
                                 </div>
                                 <a href="{{ route('proyectos.cronograma.ver-ajuste', ['proyecto' => $proyecto, 'ajuste' => $ajuste]) }}" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">

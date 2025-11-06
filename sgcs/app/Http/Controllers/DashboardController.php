@@ -27,26 +27,42 @@ class DashboardController extends Controller
             $query->where('usuario_id', $usuarioId);
         })->count();
 
-        // 3. Solicitudes de cambio pendientes (por ahora 0, implementaremos después)
-        $cambiosPendientes = 0;
+        // 3. TODOS mis proyectos (creados + asignados sin duplicar)
+        $misProyectosIds = Proyecto::where('creado_por', $usuarioId)
+            ->orWhereHas('equipos.miembros', function ($query) use ($usuarioId) {
+                $query->where('usuario_id', $usuarioId);
+            })
+            ->pluck('id');
 
-        // 4. Elementos de configuración (por ahora 0, implementaremos después)
-        $elementosConfiguracion = 0;
+        // 4. Total de liberaciones en mis proyectos
+        $totalLiberaciones = DB::table('liberaciones')
+            ->whereIn('proyecto_id', $misProyectosIds)
+            ->count();
 
-        // 📁 PROYECTOS QUE YO CREÉ (máximo 5 recientes)
-        $misProyectosCollection = Proyecto::with(['equipos' => function($query) {
-                $query->withCount('miembros');
+        // 5. Liberaciones este mes
+        $liberacionesMes = DB::table('liberaciones')
+            ->whereIn('proyecto_id', $misProyectosIds)
+            ->whereMonth('fecha_liberacion', now()->month)
+            ->whereYear('fecha_liberacion', now()->year)
+            ->count();
+
+        // 📁 TODOS MIS PROYECTOS (creados + asignados, máximo 10 recientes)
+        $todosProyectosCollection = Proyecto::with(['equipos' => function($query) use ($usuarioId) {
+                $query->withCount('miembros')
+                      ->with(['miembros' => function($q) use ($usuarioId) {
+                          $q->where('usuario_id', $usuarioId);
+                      }]);
             }])
-            ->where('creado_por', $usuarioId)
+            ->whereIn('id', $misProyectosIds)
             ->orderBy('creado_en', 'desc')
-            ->limit(5)
+            ->limit(10)
             ->get();
 
         // Resolver nombres de metodologías en batch para evitar N+1
-        $metodologiaIds = $misProyectosCollection->pluck('id_metodologia')->filter()->unique()->values()->all();
+        $metodologiaIds = $todosProyectosCollection->pluck('id_metodologia')->filter()->unique()->values()->all();
         $metodologiasMap = Metodologia::whereIn('id_metodologia', $metodologiaIds)->get()->keyBy('id_metodologia')->map(function($m) { return $m->nombre; });
 
-        $misProyectos = $misProyectosCollection->map(function($proyecto) use ($metodologiasMap) {
+        $misProyectos = $todosProyectosCollection->map(function($proyecto) use ($metodologiasMap, $usuarioId) {
                 // Calcular progreso real basado en tareas
                 $totalTareas = $proyecto->tareas()->count();
                 $tareasCompletadas = $proyecto->tareas()
@@ -59,6 +75,21 @@ class DashboardController extends Controller
 
                 $metNombre = $metodologiasMap[$proyecto->id_metodologia] ?? 'No especificada';
 
+                // Determinar mi rol en el proyecto
+                $miRol = 'Creador';
+                $nombreEquipo = null;
+
+                if ($proyecto->creado_por != $usuarioId) {
+                    // Soy miembro, buscar mi rol
+                    $miEquipo = $proyecto->equipos->first();
+                    if ($miEquipo && $miEquipo->miembros->isNotEmpty()) {
+                        $miembro = $miEquipo->miembros->first();
+                        $rolId = $miembro->pivot->rol_id;
+                        $miRol = \App\Models\Rol::find($rolId)->nombre ?? 'Miembro';
+                        $nombreEquipo = $miEquipo->nombre;
+                    }
+                }
+
                 return [
                     'id' => $proyecto->id,
                     'codigo' => $proyecto->codigo,
@@ -70,71 +101,18 @@ class DashboardController extends Controller
                     'progreso' => $progreso,
                     'estado' => 'Activo', // temporal
                     'iniciales' => $this->getIniciales($proyecto->nombre),
-                ];
-            });
-
-        // 👥 PROYECTOS DONDE SOY MIEMBRO (máximo 5 recientes)
-        $proyectosParticipando = Proyecto::with(['equipos' => function($query) use ($usuarioId) {
-                $query->whereHas('miembros', function($q) use ($usuarioId) {
-                    $q->where('usuario_id', $usuarioId);
-                })->with(['miembros' => function($q) use ($usuarioId) {
-                    $q->where('usuario_id', $usuarioId);
-                }]);
-            }])
-            ->whereHas('equipos.miembros', function ($query) use ($usuarioId) {
-                $query->where('usuario_id', $usuarioId);
-            })
-            ->where('creado_por', '!=', $usuarioId) // Excluir proyectos que yo creé
-            ->orderBy('creado_en', 'desc')
-            ->limit(5)
-            ->get();
-
-        // Resolver metodologías para los proyectos donde participa el usuario
-        $metodologiaIdsPart = $proyectosParticipando->pluck('id_metodologia')->filter()->unique()->values()->all();
-        $metodologiasMapPart = Metodologia::whereIn('id_metodologia', $metodologiaIdsPart)->get()->keyBy('id_metodologia')->map(function($m) { return $m->nombre; });
-
-        $proyectosParticipando = $proyectosParticipando->map(function($proyecto) use ($usuarioId, $metodologiasMapPart) {
-                // Obtener mi rol en este proyecto
-                $miEquipo = $proyecto->equipos->first();
-                $miembro = $miEquipo->miembros->first();
-
-                // Obtener el rol desde el pivot
-                $rolId = $miembro->pivot->rol_id;
-                $miRol = \App\Models\Rol::find($rolId)->nombre ?? 'Miembro';
-
-                // Calcular progreso real basado en tareas
-                $totalTareas = $proyecto->tareas()->count();
-                $tareasCompletadas = $proyecto->tareas()
-                    ->whereIn('estado', ['COMPLETADA', 'Done', 'DONE'])
-                    ->count();
-
-                $progreso = $totalTareas > 0
-                    ? round(($tareasCompletadas / $totalTareas) * 100, 1)
-                    : 0;
-
-                $metNombre = $metodologiasMapPart[$proyecto->id_metodologia] ?? 'No especificada';
-
-                return [
-                    'id' => $proyecto->id,
-                    'codigo' => $proyecto->codigo,
-                    'nombre' => $proyecto->nombre,
-                    'id_metodologia' => $proyecto->id_metodologia,
-                    'metodologia' => $metNombre,
                     'mi_rol' => $miRol,
-                    'nombre_equipo' => $miEquipo->nombre ?? 'Sin equipo',
-                    'progreso' => $progreso,
-                    'estado' => 'Activo', // temporal
-                    'iniciales' => $this->getIniciales($proyecto->nombre),
+                    'nombre_equipo' => $nombreEquipo,
+                    'es_creador' => $proyecto->creado_por == $usuarioId,
                 ];
             });
 
         return view('dashboard', compact(
             'proyectosCreados',
             'proyectosAsignados',
-            'cambiosPendientes',
-            'elementosConfiguracion',
-            'misProyectos',
-            'proyectosParticipando'
+            'totalLiberaciones',
+            'liberacionesMes',
+            'misProyectos'
         ));
     }
 

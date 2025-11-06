@@ -2,8 +2,10 @@
 
 <?php
 
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EstadisticasController;
 use App\Http\Controllers\GestionProyectos\ProyectoController;
 use App\Http\Controllers\GestionProyectos\ElementoConfiguracionController;
 use App\Http\Controllers\GestionProyectos\RelacionECController;
@@ -21,12 +23,19 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/perfil', [PerfilController::class, 'edit'])->name('profile.edit');
-    Route::patch('/perfil', [PerfilController::class, 'update'])->name('profile.update');
-    Route::delete('/perfil', [PerfilController::class, 'destroy'])->name('profile.destroy');
+Route::get('/estadisticas', [EstadisticasController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('estadisticas');
 
-    // 2FA
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Ruta global de Liberaciones (fuera de proyectos individuales)
+    Route::get('/liberaciones', [\App\Http\Controllers\LiberacionesGlobalController::class, 'index'])->name('liberaciones.index');
+
+    // Rutas de proyectos
     Route::post('/perfil/activar-2fa', [PerfilController::class, 'activar2fa'])->name('perfil.activar2fa');
     Route::post('/perfil/confirmar-2fa', [PerfilController::class, 'confirmar2fa'])->name('perfil.confirmar2fa');
     Route::post('/perfil/desactivar-2fa', [PerfilController::class, 'desactivar2fa'])->name('perfil.desactivar2fa');

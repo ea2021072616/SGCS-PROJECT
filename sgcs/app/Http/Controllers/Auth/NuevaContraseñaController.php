@@ -20,7 +20,7 @@ class NuevaContraseñaController extends Controller
      */
     public function create(Request $request): View
     {
-        return view('auth.restablecer-contraseña', ['request' => $request]);
+        return view('auth.restablecer-contrasena', ['request' => $request]);
     }
 
     /**

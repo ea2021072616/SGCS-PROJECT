@@ -15,7 +15,7 @@ class RestablecerContraseñaEnlaceController extends Controller
      */
     public function create(): View
     {
-        return view('auth.olvide-contraseña');
+        return view('auth.olvide-contrasena');
     }
 
     /**

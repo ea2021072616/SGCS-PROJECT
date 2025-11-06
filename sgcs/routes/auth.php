@@ -22,16 +22,16 @@ Route::middleware('guest')->group(function () {
 
     Route::post('iniciar-sesion', [SesionAutenticadaController::class, 'store']);
 
-    Route::get('olvide-contraseña', [RestablecerContraseñaEnlaceController::class, 'create'])
+    Route::get('olvide-contrasena', [RestablecerContraseñaEnlaceController::class, 'create'])
         ->name('password.request');
 
-    Route::post('olvide-contraseña', [RestablecerContraseñaEnlaceController::class, 'store'])
+    Route::post('olvide-contrasena', [RestablecerContraseñaEnlaceController::class, 'store'])
         ->name('password.email');
 
-    Route::get('restablecer-contraseña/{token}', [NuevaContraseñaController::class, 'create'])
+    Route::get('restablecer-contrasena/{token}', [NuevaContraseñaController::class, 'create'])
         ->name('password.reset');
 
-    Route::post('restablecer-contraseña', [NuevaContraseñaController::class, 'store'])
+    Route::post('restablecer-contrasena', [NuevaContraseñaController::class, 'store'])
         ->name('password.store');
 });
 
