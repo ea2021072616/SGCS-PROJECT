@@ -94,15 +94,7 @@ class ElementoConfiguracionController extends Controller
     {
         $this->verificarAcceso($proyecto);
 
-        // Obtener todos los miembros de todos los equipos del proyecto
-        $miembrosEquipo = collect();
-        foreach ($proyecto->equipos as $equipo) {
-            $miembrosEquipo = $miembrosEquipo->merge($equipo->miembros);
-        }
-        // Eliminar duplicados si un usuario está en varios equipos
-        $miembrosEquipo = $miembrosEquipo->unique('id');
-
-        return view('gestionProyectos.elementos.create', compact('proyecto', 'miembrosEquipo'));
+        return view('gestionProyectos.elementos.create', compact('proyecto'));
     }
 
     /**
@@ -131,7 +123,7 @@ class ElementoConfiguracionController extends Controller
         $elemento->titulo = $validated['titulo'];
         $elemento->descripcion = $validated['descripcion'];
         $elemento->tipo = $validated['tipo'];
-        $elemento->estado = 'BORRADOR'; // Estado inicial correcto
+        $elemento->estado = 'PENDIENTE'; // Estado inicial: pendiente hasta que se vincule un commit
         $elemento->creado_por = Auth::user()->id;
         $elemento->save();
 
@@ -156,22 +148,8 @@ class ElementoConfiguracionController extends Controller
             }
         }
 
-        // Crear primera versión (inicial en borrador)
-        if ($elemento->versiones()->count() === 0) {
-            $version = new VersionEC();
-            $version->id = (string) Str::uuid();
-            $version->ec_id = $elemento->id;
-            $version->version = '0.0.0'; // Versión inicial
-            $version->registro_cambios = 'Versión inicial';
-            $version->commit_id = $commitId; // Asociar commit si existe
-            $version->estado = 'BORRADOR'; // Estado inicial correcto
-            $version->creado_por = Auth::user()->id;
-            $version->save();
-
-            // Asignar como versión actual
-            $elemento->version_actual_id = $version->id;
-            $elemento->save();
-        }
+        // NO crear versión inicial - las versiones solo se crean cuando el CCB aprueba
+        // El EC queda en estado PENDIENTE sin versiones hasta su primera aprobación
 
         return redirect()
             ->route('proyectos.elementos.index', $proyecto)
@@ -291,18 +269,14 @@ class ElementoConfiguracionController extends Controller
             $nuevaVersion = implode('.', $versionParts);
         }
 
-        // Crear nueva versión APROBADA
+        // Crear nueva versión APROBADA (lista para liberar)
         $version = new VersionEC();
         $version->id = (string) Str::uuid();
         $version->ec_id = $elemento->id;
         $version->version = $nuevaVersion;
+        $version->estado = 'APROBADO'; // Estado inicial al aprobar
         $version->registro_cambios = $validated['registro_cambios'] ?? 'Versión aprobada';
         $version->commit_id = $commit->id;
-
-        if (Schema::hasColumn('versiones_ec', 'estado')) {
-            $version->estado = 'APROBADO';
-        }
-
         $version->creado_por = Auth::user()->id;
         $version->aprobado_por = Auth::user()->id;
         $version->aprobado_en = now();

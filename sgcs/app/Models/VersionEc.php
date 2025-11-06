@@ -19,9 +19,9 @@ class VersionEc extends Model
         'id',
         'ec_id',
         'version',
-        'registro_cambios',
-        'commit_id', // Cambiado de archivo_id
         'estado',
+        'registro_cambios',
+        'commit_id',
         'creado_por',
         'aprobado_por',
         'aprobado_en',

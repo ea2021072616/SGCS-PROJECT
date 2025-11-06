@@ -18,16 +18,19 @@
             <!-- Header -->
             <div class="mb-6 flex justify-between items-center">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Equipos del Proyecto</h1>
+                    <h1 class="text-2xl font-bold text-gray-900">Equipo del Proyecto</h1>
                     <p class="text-gray-600 mt-1">{{ $proyecto->nombre }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Cada proyecto tiene un único equipo principal</p>
                 </div>
+                @if($equipos->isEmpty())
                 <a href="{{ route('proyectos.equipos.create', $proyecto) }}"
                    class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
-                    Nuevo Equipo
+                    Crear Equipo
                 </a>
+                @endif
             </div>
 
             @if($equipos->isEmpty())
@@ -36,14 +39,14 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                         </svg>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay equipos configurados</h3>
-                        <p class="text-gray-600 mb-6">Crea equipos para organizar a los miembros del proyecto.</p>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay equipo configurado</h3>
+                        <p class="text-gray-600 mb-6">Crea el equipo principal para organizar a los miembros del proyecto.</p>
                         <a href="{{ route('proyectos.equipos.create', $proyecto) }}"
                            class="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
-                            Crear Primer Equipo
+                            Crear Equipo Principal
                         </a>
                     </div>
                 </div>

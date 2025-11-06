@@ -453,7 +453,7 @@ class TareaProyectoController extends Controller
             $ec->creado_por = $tarea->responsable ?? Auth::user()->id;
         }
 
-        // Cambiar estado a EN_REVISION (esperando aprobación)
+        // Cambiar estado a EN_REVISION (esperando aprobación del CCB)
         $ec->estado = 'EN_REVISION';
         $ec->save();
 
@@ -462,7 +462,7 @@ class TareaProyectoController extends Controller
             $tarea->id_ec = $ec->id;
         }
 
-        // Registrar el commit en la BD
+        // Registrar el commit en la BD vinculado al EC
         $commit = new CommitRepositorio();
         $commit->id = (string) Str::uuid();
         $commit->url_repositorio = $infoCommit['url_repositorio'];
@@ -479,38 +479,14 @@ class TareaProyectoController extends Controller
 
         $commit->save();
 
-        // CREAR VERSIÓN EN REVISIÓN (CORRECCIÓN: antes faltaba esto)
-        $versionAnterior = $ec->versionActual;
-
-        // Calcular nueva versión
-        if (!$versionAnterior || $versionAnterior->version === '0.0.0') {
-            $nuevaVersion = '0.1.0'; // Primera versión funcional
-        } else {
-            $parts = explode('.', $versionAnterior->version);
-            $parts[1] = (int)$parts[1] + 1; // Incrementar minor
-            $parts[2] = 0; // Reset patch
-            $nuevaVersion = implode('.', $parts);
-        }
-
-        // Crear versión en estado EN_REVISION
-        $version = new VersionEC();
-        $version->id = (string) Str::uuid();
-        $version->ec_id = $ec->id;
-        $version->version = $nuevaVersion;
-        $version->estado = 'EN_REVISION';
-        $version->registro_cambios = "Generado desde tarea: {$tarea->nombre}";
-        $version->commit_id = $commit->id;
-        $version->creado_por = $tarea->responsable ?? Auth::user()->id;
-        $version->save();
-
-        // Actualizar versión actual del EC
-        $ec->version_actual_id = $version->id;
-        $ec->save();
+        // NOTA: Las versiones solo se crean cuando el CCB aprueba el EC (estado APROBADO)
+        // Por ahora solo registramos el commit y cambiamos el EC a EN_REVISION
 
         return [
             'success' => true,
-            'message' => "Tarea completada. EC creado/actualizado con versión {$nuevaVersion} en revisión.",
+            'message' => "Tarea completada. EC '{$ec->codigo}' pasó a estado EN_REVISION. Esperando aprobación del CCB.",
             'commit_id' => $commit->id,
+            'ec_id' => $ec->id,
         ];
     }
 }

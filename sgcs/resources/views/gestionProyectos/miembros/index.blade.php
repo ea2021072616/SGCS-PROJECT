@@ -152,7 +152,7 @@
                                     </select>
                                 </div>
 
-                                <div class="mb-4">
+                                <div class="mb-6">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
                                         Rol en el Proyecto *
                                     </label>
@@ -164,20 +164,10 @@
                                     </select>
                                 </div>
 
-                                <div class="mb-6">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        Equipo *
-                                    </label>
-                                    <select name="equipo_id" class="select select-bordered w-full" required>
-                                        <option value="">Seleccionar equipo...</option>
-                                        @foreach($equipos as $equipo)
-                                            <option value="{{ $equipo->id }}">{{ $equipo->nombre }}</option>
-                                        @endforeach
-                                    </select>
-                                    <p class="mt-1 text-xs text-gray-500">
-                                        El miembro será agregado a este equipo
-                                    </p>
-                                </div>
+                                {{-- Campo oculto: asignar automáticamente al único equipo del proyecto --}}
+                                @if($equipos->isNotEmpty())
+                                    <input type="hidden" name="equipo_id" value="{{ $equipos->first()->id }}">
+                                @endif
 
                                 <button type="submit" class="btn btn-primary w-full">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,18 +226,19 @@
 
             <!-- Acciones rápidas -->
             <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <a href="{{ route('proyectos.equipos.index', $proyecto) }}"
-                   class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition text-center border border-gray-200">
-                    <div class="mb-2 flex justify-center">
-                        <svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                    </div>
-                    <div class="text-gray-900 font-medium">Gestionar Equipos</div>
-                    <div class="text-sm text-gray-600">Administrar equipos del proyecto</div>
-                </a>
-
-                <a href="{{ route('proyectos.show', $proyecto) }}"
+                    <!-- Quick Action 3: CCB -->
+                    <a href="{{ route('proyectos.ccb.dashboard', $proyecto) }}"
+                       class="block p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-semibold text-gray-900">Comité de Cambios (CCB)</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Gestionar miembros y votaciones del CCB</p>
+                    </a>                <a href="{{ route('proyectos.show', $proyecto) }}"
                    class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition text-center border border-gray-200">
                     <div class="mb-2 flex justify-center">
                         <svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">

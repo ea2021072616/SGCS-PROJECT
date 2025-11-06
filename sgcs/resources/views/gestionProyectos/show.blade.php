@@ -59,8 +59,8 @@
                         <a href="{{ route('proyectos.show', $proyecto) }}" class="py-3 px-1 border-b-2 border-blue-600 text-sm font-medium text-blue-600 whitespace-nowrap">
                             Dashboard
                         </a>
-                        <a href="#" class="py-3 px-1 border-b-2 border-transparent text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-gray-300 whitespace-nowrap">
-                            Equipos
+                        <a href="{{ route('proyectos.equipos.index', $proyecto) }}" class="py-3 px-1 border-b-2 border-transparent text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-gray-300 whitespace-nowrap">
+                            Equipo
                         </a>
                         <a href="{{ route('proyectos.elementos.index', $proyecto) }}" class="py-3 px-1 border-b-2 border-transparent text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-gray-300 whitespace-nowrap">
                             Elementos Config.
@@ -125,8 +125,10 @@
                     <div class="card-body">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-gray-600">Equipos</p>
-                                <p class="text-3xl font-bold text-gray-900 mt-1">{{ $proyecto->equipos->count() }}</p>
+                                <p class="text-sm text-gray-600">Miembros del Equipo</p>
+                                <p class="text-3xl font-bold text-gray-900 mt-1">
+                                    {{ $proyecto->equipos->sum(function($equipo) { return $equipo->miembros->count(); }) }}
+                                </p>
                             </div>
                             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,7 +178,7 @@
             <!-- Lista de Equipos -->
             <div class="card bg-white shadow-sm mt-6">
                 <div class="card-body">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Equipos del Proyecto</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Equipo del Proyecto</h2>
 
                     <div class="space-y-4">
                         @foreach($proyecto->equipos as $equipo)
