@@ -390,9 +390,22 @@ class TareaProyectoController extends Controller
     /**
      * Verifica si un estado corresponde a "completado"
      */
+    /**
+     * Verifica si un estado corresponde a "completado"
+     * Considera las diferentes fases según la metodología
+     */
     private function esEstadoCompletado($estado): bool
     {
-        $estadosCompletados = ['COMPLETADA', 'COMPLETADO', 'Done', 'DONE', 'Completado', 'Finalizado', 'FINALIZADO'];
+        // Estados genéricos de completado
+        $estadosGenericos = ['COMPLETADA', 'COMPLETADO', 'Completado', 'Finalizado', 'FINALIZADO'];
+
+        // Estados específicos por metodología
+        $estadosScrum = ['Done', 'DONE'];
+        $estadosCascada = ['Despliegue', 'DESPLIEGUE', 'Mantenimiento', 'MANTENIMIENTO'];
+
+        // Combinar todos los estados
+        $estadosCompletados = array_merge($estadosGenericos, $estadosScrum, $estadosCascada);
+
         return in_array($estado, $estadosCompletados);
     }
 
@@ -466,9 +479,37 @@ class TareaProyectoController extends Controller
 
         $commit->save();
 
+        // CREAR VERSIÓN EN REVISIÓN (CORRECCIÓN: antes faltaba esto)
+        $versionAnterior = $ec->versionActual;
+
+        // Calcular nueva versión
+        if (!$versionAnterior || $versionAnterior->version === '0.0.0') {
+            $nuevaVersion = '0.1.0'; // Primera versión funcional
+        } else {
+            $parts = explode('.', $versionAnterior->version);
+            $parts[1] = (int)$parts[1] + 1; // Incrementar minor
+            $parts[2] = 0; // Reset patch
+            $nuevaVersion = implode('.', $parts);
+        }
+
+        // Crear versión en estado EN_REVISION
+        $version = new VersionEC();
+        $version->id = (string) Str::uuid();
+        $version->ec_id = $ec->id;
+        $version->version = $nuevaVersion;
+        $version->estado = 'EN_REVISION';
+        $version->registro_cambios = "Generado desde tarea: {$tarea->nombre}";
+        $version->commit_id = $commit->id;
+        $version->creado_por = $tarea->responsable ?? Auth::user()->id;
+        $version->save();
+
+        // Actualizar versión actual del EC
+        $ec->version_actual_id = $version->id;
+        $ec->save();
+
         return [
             'success' => true,
-            'message' => 'Tarea completada y Elemento de Configuración creado/actualizado correctamente.',
+            'message' => "Tarea completada. EC creado/actualizado con versión {$nuevaVersion} en revisión.",
             'commit_id' => $commit->id,
         ];
     }

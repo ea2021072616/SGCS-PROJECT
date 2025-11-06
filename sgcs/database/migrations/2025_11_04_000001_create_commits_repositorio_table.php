@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('commits_repositorio', function (Blueprint $table) {
             $table->char('id', 36)->primary();
             $table->text('url_repositorio'); // URL del repositorio (ej: https://github.com/user/repo)
-            $table->text('hash_commit'); // SHA del commit
+            $table->string('hash_commit', 191); // SHA del commit (varchar so it can be indexed)
             $table->char('ec_id', 36)->nullable(); // Relación con elemento de configuración
 
             // Campos opcionales que se consultan dinámicamente desde GitHub API

@@ -21,7 +21,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function verGrafo(Proyecto $proyecto)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
         return view('gestionProyectos.elementos.grafo', compact('proyecto'));
     }
     /**
@@ -29,7 +29,10 @@ class ElementoConfiguracionController extends Controller
      */
     public function grafo(Proyecto $proyecto)
     {
-        $elementos = $proyecto->elementosConfiguracion()->get(['id', 'titulo', 'tipo']);
+        $elementos = $proyecto->elementosConfiguracion()
+            ->with('versiones')
+            ->get(['id', 'titulo', 'tipo', 'estado', 'codigo_ec']);
+
         $relaciones = \App\Models\RelacionEC::whereIn('desde_ec', $elementos->pluck('id'))
             ->whereIn('hacia_ec', $elementos->pluck('id'))
             ->get(['desde_ec', 'hacia_ec', 'tipo_relacion', 'nota']);
@@ -38,9 +41,13 @@ class ElementoConfiguracionController extends Controller
             return [
                 'id' => $e->id,
                 'label' => $e->titulo,
+                'codigo' => $e->codigo_ec,
                 'group' => $e->tipo,
+                'estado' => $e->estado,
+                'versiones' => $e->versiones->count(),
             ];
         });
+
         $edges = $relaciones->map(function($r) {
             return [
                 'from' => $r->desde_ec,
@@ -56,12 +63,12 @@ class ElementoConfiguracionController extends Controller
         ]);
     }
     /**
-     * Verifica que el usuario sea el creador del proyecto
+     * Verifica que el usuario sea líder del proyecto
      */
-    private function verificarCreador(Proyecto $proyecto)
+    private function verificarAcceso(Proyecto $proyecto)
     {
-        if ($proyecto->creado_por !== Auth::user()->id) {
-            abort(403, 'Solo el creador del proyecto puede gestionar elementos de configuración.');
+        if (!$proyecto->esLider(Auth::user()->id)) {
+            abort(403, 'Solo el líder del equipo puede gestionar elementos de configuración.');
         }
     }
 
@@ -70,7 +77,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function index(Proyecto $proyecto)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
 
         $elementos = $proyecto->elementosConfiguracion()
             ->with(['creador', 'versionActual.commit', 'versiones'])
@@ -85,7 +92,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function create(Proyecto $proyecto)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
 
         // Obtener todos los miembros de todos los equipos del proyecto
         $miembrosEquipo = collect();
@@ -103,7 +110,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function store(Request $request, Proyecto $proyecto)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
 
         $validated = $request->validate([
             'titulo' => 'required|string|max:255',
@@ -124,7 +131,7 @@ class ElementoConfiguracionController extends Controller
         $elemento->titulo = $validated['titulo'];
         $elemento->descripcion = $validated['descripcion'];
         $elemento->tipo = $validated['tipo'];
-    $elemento->estado = 'PENDIENTE';
+        $elemento->estado = 'BORRADOR'; // Estado inicial correcto
         $elemento->creado_por = Auth::user()->id;
         $elemento->save();
 
@@ -149,19 +156,15 @@ class ElementoConfiguracionController extends Controller
             }
         }
 
-        // Crear primera versión (inicial en borrador) sólo si no existen versiones previas
+        // Crear primera versión (inicial en borrador)
         if ($elemento->versiones()->count() === 0) {
             $version = new VersionEC();
             $version->id = (string) Str::uuid();
             $version->ec_id = $elemento->id;
-            // Usamos 0.0.0 como versión inicial (borrador) — se marcará como aprobada/lanzada mediante flujo de revisiones
-            $version->version = '0.0.0';
+            $version->version = '0.0.0'; // Versión inicial
             $version->registro_cambios = 'Versión inicial';
             $version->commit_id = $commitId; // Asociar commit si existe
-                // Asignar estado sólo si la columna existe en la tabla (para compatibilidad con migraciones actuales)
-                if (Schema::hasColumn('versiones_ec', 'estado')) {
-                    $version->estado = 'PENDIENTE';
-                }
+            $version->estado = 'BORRADOR'; // Estado inicial correcto
             $version->creado_por = Auth::user()->id;
             $version->save();
 
@@ -180,7 +183,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function edit(Proyecto $proyecto, ElementoConfiguracion $elemento)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);
@@ -202,7 +205,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function update(Request $request, Proyecto $proyecto, ElementoConfiguracion $elemento)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);
@@ -212,7 +215,7 @@ class ElementoConfiguracionController extends Controller
             'titulo' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'tipo' => 'required|in:DOCUMENTO,CODIGO,SCRIPT_BD,CONFIGURACION,OTRO',
-            'estado' => 'required|in:PENDIENTE,BORRADOR,EN_REVISION,APROBADO,LIBERADO,OBSOLETO',
+            'estado' => 'required|in:BORRADOR,EN_REVISION,APROBADO,LIBERADO,OBSOLETO',
         ]);
 
         // Actualizar solo metadatos del elemento (NO se crea versión)
@@ -232,7 +235,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function review(Proyecto $proyecto, ElementoConfiguracion $elemento)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);
@@ -246,7 +249,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function approve(Request $request, Proyecto $proyecto, ElementoConfiguracion $elemento)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);
@@ -320,7 +323,7 @@ class ElementoConfiguracionController extends Controller
      */
     public function destroy(Proyecto $proyecto, ElementoConfiguracion $elemento)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto);
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);
@@ -389,5 +392,40 @@ class ElementoConfiguracionController extends Controller
             Log::warning('Error al obtener datos del commit de GitHub: ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Obtiene detalles completos de un commit desde GitHub API (para modal)
+     */
+    public function obtenerDetallesCommit(CommitRepositorio $commit)
+    {
+        $commitService = app(\App\Services\CommitGitHubService::class);
+        $commitUrl = $commit->url_completa;
+
+        $datos = $commitService->obtenerDatosCommit($commitUrl, 60);
+
+        if (!$datos) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo obtener información del commit desde GitHub'
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'commit' => [
+                'hash' => $commit->hash_corto,
+                'hash_completo' => $commit->hash_commit,
+                'url' => $commit->url_completa,
+                'repositorio' => $commit->url_repositorio,
+                'autor' => $datos['autor'],
+                'autor_email' => $datos['autor_email'],
+                'mensaje' => $datos['mensaje'],
+                'fecha' => $datos['fecha_commit'],
+                'stats' => $datos['stats'],
+                'archivos_modificados' => $datos['archivos_modificados'],
+                'archivos' => $datos['archivos'],
+            ]
+        ]);
     }
 }

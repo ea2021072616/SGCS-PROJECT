@@ -22,8 +22,8 @@ class ComiteCambiosController extends Controller
         $ccb = ComiteCambio::where('proyecto_id', $proyecto->id)->first();
 
         if (!$ccb) {
-            // Si no existe CCB, redirigir a configuración (solo para creador)
-            if ($proyecto->creado_por === Auth::id()) {
+            // Si no existe CCB, redirigir a configuración (solo para líder)
+            if ($proyecto->esLider(Auth::id())) {
                 return redirect()
                     ->route('proyectos.ccb.configurar', $proyecto)
                     ->with('info', 'Primero debes configurar el Comité de Control de Cambios (CCB)');
@@ -33,10 +33,10 @@ class ComiteCambiosController extends Controller
         }
 
         $esMiembro = $ccb->esMiembro(Auth::id());
-        $esCreador = $proyecto->creado_por === Auth::id();
+        $esLider = $proyecto->esLider(Auth::id());
 
-        // Permitir acceso si es miembro del CCB o creador del proyecto
-        if (!$esMiembro && !$esCreador) {
+        // Permitir acceso si es miembro del CCB o líder del proyecto
+        if (!$esMiembro && !$esLider) {
             return view('gestionConfiguracion.ccb.sin-acceso', compact('proyecto', 'ccb'));
         }
 
@@ -68,12 +68,12 @@ class ComiteCambiosController extends Controller
     }
 
     /**
-     * Configurar CCB (solo creador del proyecto)
+     * Configurar CCB (solo líder del proyecto)
      */
     public function configurar(Proyecto $proyecto)
     {
-        if ($proyecto->creado_por !== Auth::id()) {
-            abort(403, 'Solo el creador del proyecto puede configurar el CCB');
+        if (!$proyecto->esLider(Auth::id())) {
+            abort(403, 'Solo el líder del proyecto puede configurar el CCB');
         }
 
         $ccb = ComiteCambio::where('proyecto_id', $proyecto->id)->first();
@@ -89,8 +89,8 @@ class ComiteCambiosController extends Controller
      */
     public function guardarConfiguracion(Request $request, Proyecto $proyecto)
     {
-        if ($proyecto->creado_por !== Auth::id()) {
-            abort(403, 'Solo el creador del proyecto puede configurar el CCB');
+        if (!$proyecto->esLider(Auth::id())) {
+            abort(403, 'Solo el líder del proyecto puede configurar el CCB');
         }
 
         $validated = $request->validate([
@@ -142,7 +142,7 @@ class ComiteCambiosController extends Controller
         $ccb = ComiteCambio::where('proyecto_id', $proyecto->id)->first();
 
         if (!$ccb) {
-            if ($proyecto->creado_por === Auth::id()) {
+            if ($proyecto->esLider(Auth::id())) {
                 return redirect()
                     ->route('proyectos.ccb.configurar', $proyecto)
                     ->with('info', 'Primero debes configurar el CCB');
@@ -152,9 +152,9 @@ class ComiteCambiosController extends Controller
         }
 
         $esMiembro = $ccb->esMiembro(Auth::id());
-        $esCreador = $proyecto->creado_por === Auth::id();
+        $esLider = $proyecto->esLider(Auth::id());
 
-        if (!$esMiembro && !$esCreador) {
+        if (!$esMiembro && !$esLider) {
             return view('gestionConfiguracion.ccb.sin-acceso', compact('proyecto', 'ccb'));
         }
 
@@ -201,7 +201,7 @@ class ComiteCambiosController extends Controller
         $ccb = ComiteCambio::where('proyecto_id', $proyecto->id)->first();
 
         if (!$ccb) {
-            if ($proyecto->creado_por === Auth::id()) {
+            if ($proyecto->esLider(Auth::id())) {
                 return redirect()
                     ->route('proyectos.ccb.configurar', $proyecto)
                     ->with('info', 'Primero debes configurar el CCB');
@@ -211,9 +211,9 @@ class ComiteCambiosController extends Controller
         }
 
         $esMiembro = $ccb->esMiembro(Auth::id());
-        $esCreador = $proyecto->creado_por === Auth::id();
+        $esLider = $proyecto->esLider(Auth::id());
 
-        if (!$esMiembro && !$esCreador) {
+        if (!$esMiembro && !$esLider) {
             return view('gestionConfiguracion.ccb.sin-acceso', compact('proyecto', 'ccb'));
         }
 
@@ -230,10 +230,10 @@ class ComiteCambiosController extends Controller
      */
     private function verificarAccesoProyecto(Proyecto $proyecto)
     {
-        $esCreador = $proyecto->creado_por === Auth::id();
+        $esLider = $proyecto->esLider(Auth::id());
         $esMiembro = $proyecto->usuarios()->where('usuario_id', Auth::id())->exists();
 
-        if (!$esCreador && !$esMiembro) {
+        if (!$esLider && !$esMiembro) {
             abort(403, 'No tienes acceso a este proyecto');
         }
     }
@@ -245,8 +245,8 @@ class ComiteCambiosController extends Controller
     {
         $this->verificarAccesoProyecto($proyecto);
 
-        if ($proyecto->creado_por !== Auth::id()) {
-            abort(403, 'Solo el creador del proyecto puede gestionar miembros del CCB');
+        if (!$proyecto->esLider(Auth::id())) {
+            abort(403, 'Solo el líder del proyecto puede gestionar miembros del CCB');
         }
 
         $ccb = ComiteCambio::where('proyecto_id', $proyecto->id)->first();
@@ -287,8 +287,8 @@ class ComiteCambiosController extends Controller
     {
         $this->verificarAccesoProyecto($proyecto);
 
-        if ($proyecto->creado_por !== Auth::id()) {
-            abort(403, 'Solo el creador del proyecto puede gestionar miembros del CCB');
+        if (!$proyecto->esLider(Auth::id())) {
+            abort(403, 'Solo el líder del proyecto puede gestionar miembros del CCB');
         }
 
         $ccb = ComiteCambio::where('proyecto_id', $proyecto->id)->first();
@@ -318,8 +318,8 @@ class ComiteCambiosController extends Controller
     {
         $this->verificarAccesoProyecto($proyecto);
 
-        if ($proyecto->creado_por !== Auth::id()) {
-            abort(403, 'Solo el creador del proyecto puede gestionar miembros del CCB');
+        if (!$proyecto->esLider(Auth::id())) {
+            abort(403, 'Solo el líder del proyecto puede gestionar miembros del CCB');
         }
 
         $ccb = ComiteCambio::where('proyecto_id', $proyecto->id)->first();

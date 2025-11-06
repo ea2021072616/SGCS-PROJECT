@@ -106,7 +106,7 @@
                                     @endif
                                     @if($elemento->versiones && $elemento->versiones->isNotEmpty())
                                     <p class="text-xs text-gray-500 mt-1">
-                                        Última versión: <span class="font-semibold">{{ $elemento->versiones->first()->numero_version }}</span>
+                                        Última versión: <span class="font-semibold">{{ $elemento->versiones->first()->version }}</span>
                                     </p>
                                     @endif
                                 </div>

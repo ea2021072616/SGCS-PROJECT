@@ -109,6 +109,80 @@
                     <form action="{{ route('proyectos.store-step3') }}" method="POST" id="equipoForm">
                         @csrf
 
+                        <!-- Selección de Líder del Equipo -->
+                        <div class="border-2 border-blue-200 bg-blue-50 rounded-lg p-6 mb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900 flex items-center">
+                                        <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                                        </svg>
+                                        Líder del Equipo *
+                                    </h3>
+                                    <p class="text-sm text-gray-600 mt-1">El líder tendrá permisos completos sobre el proyecto</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick="autoAsignarLider()"
+                                    class="btn btn-sm bg-blue-600 text-white hover:bg-blue-700 border-0"
+                                >
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    Asignarme como líder
+                                </button>
+                            </div>
+
+                            <div class="form-control">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="buscarLider"
+                                        placeholder="🔍 Buscar usuario por nombre o correo..."
+                                        class="input input-bordered w-full bg-white text-gray-900 pr-10"
+                                        autocomplete="off"
+                                        onkeyup="filtrarUsuarios()"
+                                        onfocus="mostrarListaUsuarios()"
+                                    >
+                                    <svg class="absolute right-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                </div>
+
+                                <!-- Lista de usuarios filtrados -->
+                                <div id="listaUsuarios" class="hidden mt-2 max-h-60 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg">
+                                    <!-- Se llena dinámicamente -->
+                                </div>
+
+                                <!-- Usuario seleccionado -->
+                                <input type="hidden" name="lider_id" id="lider_id" required>
+                                <div id="liderSeleccionado" class="hidden mt-3 p-3 bg-white border-2 border-blue-400 rounded-lg flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                                            <span id="liderInicialesDisplay"></span>
+                                        </div>
+                                        <div class="ml-3">
+                                            <div class="font-medium text-gray-900" id="liderNombreDisplay"></div>
+                                            <div class="text-sm text-gray-600" id="liderCorreoDisplay"></div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onclick="limpiarLider()"
+                                        class="btn btn-sm btn-ghost text-red-600 hover:bg-red-50"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                @error('lider_id')
+                                    <p class="text-red-600 text-sm mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
                         <!-- Miembros Container -->
                         <div class="space-y-4 mb-6" id="miembrosContainer">
                             <!-- Se agregan miembros dinámicamente -->
@@ -164,8 +238,104 @@
         let contadorMiembros = 0;
 
         // Cargar usuarios y roles desde el servidor
-        const usuarios = @json(\App\Models\Usuario::orderBy('nombre_completo')->get(['id', 'nombre_completo', 'correo']));
-        const roles = @json(\App\Models\Rol::orderBy('nombre')->get(['id', 'nombre', 'descripcion']));
+        const usuarios = @json($usuarios);
+        const todosLosRoles = @json($roles);
+
+        // Filtrar roles por metodología del proyecto + roles genéricos
+        const metodologiaId = {{ $proyectoData['id_metodologia'] }};
+
+        // Roles disponibles: los de la metodología seleccionada + los genéricos (null)
+        const roles = todosLosRoles.filter(rol =>
+            rol.metodologia_id === metodologiaId || rol.metodologia_id === null
+        );
+
+        const usuarioActual = {
+            id: '{{ Auth::id() }}',
+            nombre: '{{ Auth::user()->nombre_completo }}',
+            correo: '{{ Auth::user()->correo }}'
+        };
+
+        // ====== FUNCIONES PARA SELECCIÓN DE LÍDER ======
+
+        function getIniciales(nombre) {
+            return nombre.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        }
+
+        function autoAsignarLider() {
+            seleccionarLider(usuarioActual.id, usuarioActual.nombre, usuarioActual.correo);
+        }
+
+        function seleccionarLider(id, nombre, correo) {
+            document.getElementById('lider_id').value = id;
+            document.getElementById('liderNombreDisplay').textContent = nombre;
+            document.getElementById('liderCorreoDisplay').textContent = correo;
+            document.getElementById('liderInicialesDisplay').textContent = getIniciales(nombre);
+            document.getElementById('liderSeleccionado').classList.remove('hidden');
+            document.getElementById('buscarLider').value = nombre;
+            document.getElementById('listaUsuarios').classList.add('hidden');
+        }
+
+        function limpiarLider() {
+            document.getElementById('lider_id').value = '';
+            document.getElementById('liderSeleccionado').classList.add('hidden');
+            document.getElementById('buscarLider').value = '';
+            document.getElementById('listaUsuarios').classList.add('hidden');
+        }
+
+        function filtrarUsuarios() {
+            const busqueda = document.getElementById('buscarLider').value.toLowerCase();
+            const lista = document.getElementById('listaUsuarios');
+
+            if (busqueda.length < 2) {
+                lista.classList.add('hidden');
+                return;
+            }
+
+            const usuariosFiltrados = usuarios.filter(u =>
+                u.nombre_completo.toLowerCase().includes(busqueda) ||
+                u.correo.toLowerCase().includes(busqueda)
+            );
+
+            if (usuariosFiltrados.length === 0) {
+                lista.innerHTML = '<div class="p-4 text-center text-gray-500">No se encontraron usuarios</div>';
+                lista.classList.remove('hidden');
+                return;
+            }
+
+            lista.innerHTML = usuariosFiltrados.map(u => `
+                <div
+                    class="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-200 last:border-0 flex items-center"
+                    onclick="seleccionarLider('${u.id}', '${u.nombre_completo}', '${u.correo}')"
+                >
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                        ${getIniciales(u.nombre_completo)}
+                    </div>
+                    <div class="ml-3">
+                        <div class="font-medium text-gray-900">${u.nombre_completo}</div>
+                        <div class="text-xs text-gray-600">${u.correo}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            lista.classList.remove('hidden');
+        }
+
+        function mostrarListaUsuarios() {
+            if (document.getElementById('buscarLider').value.length >= 2) {
+                filtrarUsuarios();
+            }
+        }
+
+        // Ocultar lista al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const buscarInput = document.getElementById('buscarLider');
+            const lista = document.getElementById('listaUsuarios');
+            if (e.target !== buscarInput && !lista.contains(e.target)) {
+                lista.classList.add('hidden');
+            }
+        });
+
+        // ====== FUNCIONES PARA MIEMBROS DEL EQUIPO ======
 
         function agregarMiembro() {
             const container = document.getElementById('miembrosContainer');
@@ -238,10 +408,10 @@
 
         // Validación del formulario
         document.getElementById('equipoForm').addEventListener('submit', function(e) {
-            const container = document.getElementById('miembrosContainer');
-            if (container.children.length === 0) {
+            const liderId = document.getElementById('lider_id').value;
+            if (!liderId) {
                 e.preventDefault();
-                alert('Debes agregar al menos un miembro al equipo.');
+                alert('Debes seleccionar un líder para el equipo.');
                 return false;
             }
         });

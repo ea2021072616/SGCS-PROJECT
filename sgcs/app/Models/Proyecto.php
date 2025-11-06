@@ -156,4 +156,20 @@ class Proyecto extends Model
     {
         return $query; // Por ahora retorna todos, puedes agregar filtros
     }
+
+    /**
+     * Verificar si un usuario es líder de algún equipo del proyecto.
+     */
+    public function esLider($usuarioId)
+    {
+        return $this->equipos()->where('lider_id', $usuarioId)->exists();
+    }
+
+    /**
+     * Obtener el equipo donde el usuario es líder.
+     */
+    public function equipoDondeEsLider($usuarioId)
+    {
+        return $this->equipos()->where('lider_id', $usuarioId)->first();
+    }
 }

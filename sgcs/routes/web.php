@@ -98,6 +98,9 @@ Route::middleware('auth')->group(function () {
         // Ruta de trazabilidad general del proyecto
         Route::get('/{proyecto}/trazabilidad', [ProyectoController::class, 'trazabilidad'])->name('trazabilidad');
 
+        // API para consultar información de commits (AJAX)
+        Route::get('/commits/{commit}/detalles', [\App\Http\Controllers\GestionProyectos\ElementoConfiguracionController::class, 'obtenerDetallesCommit'])->name('commits.detalles');
+
         // Rutas de Solicitudes de Cambio (CCB)
         Route::prefix('/{proyecto}/solicitudes')->name('solicitudes.')->group(function () {
             Route::get('/', [\App\Http\Controllers\GestionConfiguracion\SolicitudCambioController::class, 'index'])->name('index');

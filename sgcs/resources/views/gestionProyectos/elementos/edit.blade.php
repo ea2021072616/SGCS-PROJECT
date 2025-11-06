@@ -130,7 +130,7 @@
                             </label>
                             <select name="estado" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 @error('estado') border-red-500 @enderror" required>
                                 <option value="BORRADOR" {{ old('estado', $elemento->estado) === 'BORRADOR' ? 'selected' : '' }}>📝 Borrador</option>
-                                <option value="REVISION" {{ old('estado', $elemento->estado) === 'REVISION' ? 'selected' : '' }}>🔍 En Revisión</option>
+                                <option value="EN_REVISION" {{ old('estado', $elemento->estado) === 'EN_REVISION' ? 'selected' : '' }}>🔍 En Revisión</option>
                                 <option value="APROBADO" {{ old('estado', $elemento->estado) === 'APROBADO' ? 'selected' : '' }}>✅ Aprobado</option>
                                 <option value="LIBERADO" {{ old('estado', $elemento->estado) === 'LIBERADO' ? 'selected' : '' }}>🚀 Liberado</option>
                                 <option value="OBSOLETO" {{ old('estado', $elemento->estado) === 'OBSOLETO' ? 'selected' : '' }}>📁 Obsoleto</option>

@@ -82,7 +82,13 @@ class CronogramaInteligenteController extends Controller
                     $opciones[$key] = filter_var($opciones[$key], FILTER_VALIDATE_BOOLEAN);
                 }
             }
-            $ajuste = $this->cronogramaService->generarAjuste($proyecto, $request->estrategia, Auth::id(), $opciones);
+
+            // Agregar estrategia a las opciones si existe
+            if ($request->has('estrategia')) {
+                $opciones['estrategia'] = $request->estrategia;
+            }
+
+            $ajuste = $this->cronogramaService->generarAjuste($proyecto, $opciones);
 
             if (!$ajuste) {
                 return redirect()->back()->with('warning', 'No se detectaron problemas que requieran ajuste.');
@@ -128,9 +134,8 @@ class CronogramaInteligenteController extends Controller
         }
 
         $success = $this->cronogramaService->aprobarAjuste(
-            $ajuste->id,
-            Auth::id(),
-            $request->input('comentarios')
+            $ajuste,
+            Auth::id()
         );
 
         if (!$success) {
@@ -143,7 +148,7 @@ class CronogramaInteligenteController extends Controller
         }
 
         return redirect()
-            ->route('cronograma.ver-ajuste', ['proyecto' => $proyecto, 'ajuste' => $ajuste])
+            ->route('proyectos.cronograma.ver-ajuste', ['proyecto' => $proyecto, 'ajuste' => $ajuste])
             ->with('success', '✅ Ajuste aprobado exitosamente.');
     }
 
@@ -157,9 +162,9 @@ class CronogramaInteligenteController extends Controller
         }
 
         $success = $this->cronogramaService->rechazarAjuste(
-            $ajuste->id,
-            Auth::id(),
-            $request->input('comentarios', 'Sin comentarios')
+            $ajuste,
+            $request->input('comentarios', 'Sin comentarios'),
+            Auth::id()
         );
 
         if (!$success) {
@@ -167,7 +172,7 @@ class CronogramaInteligenteController extends Controller
         }
 
         return redirect()
-            ->route('cronograma.dashboard', $proyecto)
+            ->route('proyectos.cronograma.dashboard', $proyecto)
             ->with('info', '❌ Ajuste rechazado.');
     }
 
@@ -180,14 +185,14 @@ class CronogramaInteligenteController extends Controller
             abort(403, 'Este ajuste no pertenece al proyecto actual');
         }
 
-        $success = $this->cronogramaService->aplicarAjuste($ajuste->id);
+        $success = $this->cronogramaService->aplicarAjuste($ajuste);
 
         if (!$success) {
             return redirect()->back()->with('error', 'No se pudo aplicar el ajuste. Verifica que esté aprobado.');
         }
 
         return redirect()
-            ->route('cronograma.dashboard', $proyecto)
+            ->route('proyectos.cronograma.dashboard', $proyecto)
             ->with('success', '🚀 Ajuste aplicado exitosamente. El cronograma ha sido actualizado.');
     }
 
@@ -200,14 +205,14 @@ class CronogramaInteligenteController extends Controller
             abort(403, 'Este ajuste no pertenece al proyecto actual');
         }
 
-        $success = $this->cronogramaService->revertirAjuste($ajuste->id);
+        $success = $this->cronogramaService->revertirAjuste($ajuste);
 
         if (!$success) {
             return redirect()->back()->with('error', 'No se pudo revertir el ajuste.');
         }
 
         return redirect()
-            ->route('cronograma.dashboard', $proyecto)
+            ->route('proyectos.cronograma.dashboard', $proyecto)
             ->with('success', '↶ Ajuste revertido. El cronograma ha sido restaurado.');
     }
 

@@ -47,9 +47,16 @@ class DashboardController extends Controller
         $metodologiasMap = Metodologia::whereIn('id_metodologia', $metodologiaIds)->get()->keyBy('id_metodologia')->map(function($m) { return $m->nombre; });
 
         $misProyectos = $misProyectosCollection->map(function($proyecto) use ($metodologiasMap) {
-                // Calcular progreso ficticio basado en fecha (temporal)
-                $diasDesdeCreacion = now()->diffInDays($proyecto->creado_en);
-                $progreso = min(100, $diasDesdeCreacion * 5);
+                // Calcular progreso real basado en tareas
+                $totalTareas = $proyecto->tareas()->count();
+                $tareasCompletadas = $proyecto->tareas()
+                    ->whereIn('estado', ['COMPLETADA', 'Done', 'DONE'])
+                    ->count();
+
+                $progreso = $totalTareas > 0
+                    ? round(($tareasCompletadas / $totalTareas) * 100, 1)
+                    : 0;
+
                 $metNombre = $metodologiasMap[$proyecto->id_metodologia] ?? 'No especificada';
 
                 return [
@@ -95,9 +102,15 @@ class DashboardController extends Controller
                 $rolId = $miembro->pivot->rol_id;
                 $miRol = \App\Models\Rol::find($rolId)->nombre ?? 'Miembro';
 
-                // Calcular progreso ficticio basado en fecha (temporal)
-                $diasDesdeCreacion = now()->diffInDays($proyecto->creado_en);
-                $progreso = min(100, $diasDesdeCreacion * 5);
+                // Calcular progreso real basado en tareas
+                $totalTareas = $proyecto->tareas()->count();
+                $tareasCompletadas = $proyecto->tareas()
+                    ->whereIn('estado', ['COMPLETADA', 'Done', 'DONE'])
+                    ->count();
+
+                $progreso = $totalTareas > 0
+                    ? round(($tareasCompletadas / $totalTareas) * 100, 1)
+                    : 0;
 
                 $metNombre = $metodologiasMapPart[$proyecto->id_metodologia] ?? 'No especificada';
 

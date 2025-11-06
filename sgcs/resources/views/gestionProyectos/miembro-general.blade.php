@@ -1082,7 +1082,7 @@
                                         <p class="text-sm text-gray-600 mb-2">{{ Str::limit($elemento->descripcion, 100) }}</p>
                                     @endif
                                     @if($elemento->versionActual)
-                                        <p class="text-xs text-gray-500">Versión: {{ $elemento->versionActual->numero_version }}</p>
+                                        <p class="text-xs text-gray-500">Versión: {{ $elemento->versionActual->version }}</p>
                                     @endif
                                 </div>
                             @endforeach

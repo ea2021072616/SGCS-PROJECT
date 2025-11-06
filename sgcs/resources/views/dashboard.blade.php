@@ -96,7 +96,7 @@
                         @else
                             <div class="space-y-3 mt-4">
                                 @foreach($misProyectos as $proyecto)
-                                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                                    <a href="{{ route('proyectos.show', $proyecto['id']) }}" class="block border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition cursor-pointer">
                                         <div class="flex items-start gap-3">
                                             <div class="avatar placeholder">
                                                 <div class="bg-gray-200 text-black rounded-lg w-12 h-12 flex items-center justify-center">
@@ -112,8 +112,8 @@
                                                     <span class="badge badge-outline badge-sm text-gray-800">{{ $proyecto['estado'] }}</span>
                                                 </div>
                                                 <div class="mt-3 flex items-center gap-4 text-xs text-gray-600">
-                                                    <span> {{ $proyecto['total_miembros'] }} miembros</span>
-                                                    <span> {{ $proyecto['total_equipos'] }} equipos</span>
+                                                    <span>👥 {{ $proyecto['total_miembros'] }} miembros</span>
+                                                    <span>🔧 {{ $proyecto['total_equipos'] }} equipos</span>
                                                 </div>
                                                 <div class="mt-2 flex items-center gap-2">
                                                     <progress class="progress progress-primary w-full h-2" value="{{ $proyecto['progreso'] }}" max="100"></progress>
@@ -121,7 +121,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </a>
                                 @endforeach
                             </div>
                         @endif
@@ -149,7 +149,7 @@
                         @else
                             <div class="space-y-3 mt-4">
                                 @foreach($proyectosParticipando as $proyecto)
-                                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                                    <a href="{{ route('proyectos.show', $proyecto['id']) }}" class="block border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-purple-300 transition cursor-pointer">
                                         <div class="flex items-start gap-3">
                                             <div class="avatar placeholder">
                                                 <div class="bg-gray-200 text-black rounded-lg w-12 h-12 flex items-center justify-center">
@@ -174,7 +174,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </a>
                                 @endforeach
                             </div>
                         @endif

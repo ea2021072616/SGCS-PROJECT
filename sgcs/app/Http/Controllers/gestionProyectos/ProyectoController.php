@@ -17,23 +17,25 @@ use Illuminate\Validation\Rule;
 class ProyectoController extends Controller
 {
     /**
-     * Mostrar lista de TODOS los proyectos (creados + asignados).
+     * Mostrar lista de TODOS los proyectos (donde soy líder + asignados).
      */
     public function index()
     {
         $usuarioId = Auth::user()->id;
 
-        // Proyectos donde soy CREADOR
-        $proyectosCreadosCollection = Proyecto::with(['equipos', 'creador'])
-            ->where('creado_por', $usuarioId)
+        // Proyectos donde soy LÍDER de algún equipo
+        $proyectosLider = Proyecto::with(['equipos', 'creador'])
+            ->whereHas('equipos', function($q) use ($usuarioId) {
+                $q->where('lider_id', $usuarioId);
+            })
             ->get();
 
-        // Resolver metodologías para proyectos creados
-        $metIdsCreados = $proyectosCreadosCollection->pluck('id_metodologia')->filter()->unique()->values()->all();
-        $metMapCreados = Metodologia::whereIn('id_metodologia', $metIdsCreados)->get()->keyBy('id_metodologia')->map(fn($m) => $m->nombre);
+        // Resolver metodologías para proyectos donde soy líder
+        $metIdsLider = $proyectosLider->pluck('id_metodologia')->filter()->unique()->values()->all();
+        $metMapLider = Metodologia::whereIn('id_metodologia', $metIdsLider)->get()->keyBy('id_metodologia')->map(fn($m) => $m->nombre);
 
-        $proyectosCreados = $proyectosCreadosCollection->map(function($proyecto) use ($metMapCreados) {
-            $metNombre = $metMapCreados[$proyecto->id_metodologia] ?? 'No especificada';
+        $proyectosLider = $proyectosLider->map(function($proyecto) use ($metMapLider) {
+            $metNombre = $metMapLider[$proyecto->id_metodologia] ?? 'No especificada';
 
             return [
                 'id' => $proyecto->id,
@@ -43,13 +45,13 @@ class ProyectoController extends Controller
                 'metodologia' => $metNombre,
                 'total_equipos' => $proyecto->equipos->count(),
                 'total_miembros' => $proyecto->equipos->sum(fn($e) => $e->miembros()->count()),
-                'mi_rol' => 'Creador',
+                'mi_rol' => 'Líder',
                 'creado_en' => $proyecto->creado_en,
                 'estado' => 'Activo', // temporal
             ];
         });
 
-        // Proyectos donde soy MIEMBRO
+        // Proyectos donde soy MIEMBRO (pero no líder)
         $proyectosAsignados = Proyecto::with(['equipos' => function($query) use ($usuarioId) {
                 $query->whereHas('miembros', function($q) use ($usuarioId) {
                     $q->where('usuario_id', $usuarioId);
@@ -60,10 +62,12 @@ class ProyectoController extends Controller
             ->whereHas('equipos.miembros', function ($query) use ($usuarioId) {
                 $query->where('usuario_id', $usuarioId);
             })
-            ->where('creado_por', '!=', $usuarioId)
+            ->whereDoesntHave('equipos', function($q) use ($usuarioId) {
+                $q->where('lider_id', $usuarioId);
+            })
             ->get();
 
-        // Resolver metodologías para proyectos en los que participa
+        // Resolver metodologías para proyectos en los que participo
         $metIdsAsignados = $proyectosAsignados->pluck('id_metodologia')->filter()->unique()->values()->all();
         $metMapAsignados = Metodologia::whereIn('id_metodologia', $metIdsAsignados)->get()->keyBy('id_metodologia')->map(fn($m) => $m->nombre);
 
@@ -93,7 +97,7 @@ class ProyectoController extends Controller
                 });
 
         // Combinar ambas colecciones y ordenar por fecha
-        $todosLosProyectos = $proyectosCreados->concat($proyectosAsignados)
+        $todosLosProyectos = $proyectosLider->concat($proyectosAsignados)
             ->sortByDesc('creado_en')
             ->values();
 
@@ -105,14 +109,17 @@ class ProyectoController extends Controller
      */
     public function show(Proyecto $proyecto)
     {
-        // Verificar que el usuario tenga acceso (es creador o miembro)
+        // Verificar que el usuario tenga acceso (es líder o miembro)
         $usuarioId = Auth::user()->id;
-        $esCreador = $proyecto->creado_por === $usuarioId;
+
+        // Verificar si es líder de algún equipo del proyecto
+        $esLider = $proyecto->equipos()->where('lider_id', $usuarioId)->exists();
+
         $esMiembro = $proyecto->equipos()->whereHas('miembros', function($q) use ($usuarioId) {
             $q->where('usuario_id', $usuarioId);
         })->exists();
 
-        if (!$esCreador && !$esMiembro) {
+        if (!$esLider && !$esMiembro) {
             abort(403, 'No tienes acceso a este proyecto.');
         }
 
@@ -131,8 +138,8 @@ class ProyectoController extends Controller
         $miRol = null;
         $miEquipo = null;
 
-        if ($esCreador) {
-            $miRol = 'creador';
+        if ($esLider) {
+            $miRol = 'líder';
         } else {
             // Buscar el rol del usuario en algún equipo
             foreach ($proyecto->equipos as $equipo) {
@@ -140,7 +147,7 @@ class ProyectoController extends Controller
                 if ($miembro) {
                     $rolId = $miembro->pivot->rol_id;
                     $rolObj = \App\Models\Rol::find($rolId);
-                    $miRol = strtolower($rolObj->nombre); // 'líder', 'desarrollador', etc.
+                    $miRol = strtolower($rolObj->nombre); // 'desarrollador', etc.
                     $miEquipo = $equipo;
                     break;
                 }
@@ -156,7 +163,7 @@ class ProyectoController extends Controller
 
         // Obtener el rol específico del usuario para pasarlo a la vista
         $rolEnProyecto = null;
-        if (!$esCreador && $miEquipo) {
+        if (!$esLider && $miEquipo) {
             $miembro = $miEquipo->miembros->firstWhere('id', $usuarioId);
             if ($miembro) {
                 $rolEnProyecto = \App\Models\Rol::find($miembro->pivot->rol_id);
@@ -168,17 +175,17 @@ class ProyectoController extends Controller
         $datosIntegrados = null;
 
         // Cargar datos integrados para todos los miembros del equipo (incluyendo líderes)
-        if (!$esCreador && $rolEnProyecto) {
+        if (!$esLider && $rolEnProyecto) {
             $datosIntegrados = $sgcsService->getDatosColaborador(
                 $proyecto,
                 $rolEnProyecto->nombre,
                 $usuarioId
             );
-        } elseif ($esCreador) {
-            // Para creadores, también cargar sus tareas si las tienen
+        } elseif ($esLider) {
+            // Para líderes, también cargar sus tareas si las tienen
             $datosIntegrados = $sgcsService->getDatosColaborador(
                 $proyecto,
-                'creador',
+                'líder',
                 $usuarioId
             );
         }
@@ -208,7 +215,7 @@ class ProyectoController extends Controller
         $ccb = $proyecto->hasOne(\App\Models\ComiteCambio::class, 'proyecto_id')->first();
         $esMiembroCCB = $ccb && $ccb->esMiembro($usuarioId);
 
-        if ($esCreador || $miRol === 'líder') {
+        if ($esLider || $miRol === 'líder') {
             $elementosConfiguracion = \App\Models\ElementoConfiguracion::where('proyecto_id', $proyecto->id)
                 ->with(['versionActual', 'tareas'])
                 ->get();
@@ -280,7 +287,7 @@ class ProyectoController extends Controller
         // Decidir qué vista mostrar según el rol
         $vista = 'gestionProyectos.show'; // vista por defecto
 
-        if ($esCreador || $miRol === 'líder') {
+        if ($esLider || $miRol === 'líder') {
             $vista = 'gestionProyectos.show-lider';
         } else {
             // Todos los demás roles usan la vista miembro-general (unificada)
@@ -289,7 +296,7 @@ class ProyectoController extends Controller
 
         return view($vista, compact(
             'proyecto',
-            'esCreador',
+            'esLider',
             'miRol',
             'miEquipo',
             'rolEnProyecto',
@@ -423,7 +430,16 @@ class ProyectoController extends Controller
             $proyectoData['metodologia'] = $proyectoData['metodologia'] ?? null;
         }
 
-        return view('gestionProyectos.create-step3', compact('proyectoData'));
+        // Cargar usuarios disponibles
+        $usuarios = Usuario::orderBy('nombre_completo')->get(['id', 'nombre_completo', 'correo']);
+
+        // Cargar roles filtrados por metodología
+        $roles = Rol::where(function($query) use ($proyectoData) {
+            $query->where('metodologia_id', $proyectoData['id_metodologia'])
+                  ->orWhereNull('metodologia_id');
+        })->orderBy('nombre')->get(['id', 'nombre', 'descripcion', 'metodologia_id']);
+
+        return view('gestionProyectos.create-step3', compact('proyectoData', 'usuarios', 'roles'));
     }
 
     /**
@@ -438,15 +454,19 @@ class ProyectoController extends Controller
                 ->with('error', 'Sesión expirada. Por favor, inicia el proceso nuevamente.');
         }
 
-        // Validar miembros
+        // Validar líder y miembros
         $request->validate([
-            'miembros' => ['required', 'array', 'min:1'],
+            'lider_id' => ['required', 'exists:usuarios,id'],
+            'miembros' => ['nullable', 'array'],
             'miembros.*.usuario_id' => ['required', 'exists:usuarios,id'],
             'miembros.*.rol_id' => ['required', 'exists:roles,id'],
         ]);
 
+        // Guardar líder en sesión
+        session(['lider_id' => $request->lider_id]);
+
         // Guardar miembros en sesión
-        session(['miembros_temp' => $request->miembros]);
+        session(['miembros_temp' => $request->miembros ?? []]);
 
         // Redirigir al paso 4: Revisión final
         return redirect()->route('proyectos.create-step4');
@@ -459,9 +479,10 @@ class ProyectoController extends Controller
     {
         $proyectoData = session('proyecto_temp');
         $plantillasSeleccionadas = session('plantillas_seleccionadas', []);
-        $miembrosData = session('miembros_temp');
+        $miembrosData = session('miembros_temp', []);
+        $liderId = session('lider_id');
 
-        if (!$proyectoData || !$miembrosData) {
+        if (!$proyectoData || !$liderId) {
             return redirect()->route('proyectos.create')
                 ->with('error', 'Debes completar los pasos anteriores primero.');
         }
@@ -474,7 +495,10 @@ class ProyectoController extends Controller
                 ->get();
         }
 
-        // Cargar información de usuarios y roles
+        // Cargar información del líder
+        $lider = Usuario::find($liderId);
+
+        // Cargar información de usuarios y roles de miembros
         $usuariosIds = array_column($miembrosData, 'usuario_id');
         $rolesIds = array_column($miembrosData, 'rol_id');
 
@@ -491,7 +515,7 @@ class ProyectoController extends Controller
         $metodologia = \App\Models\Metodologia::find($proyectoData['id_metodologia']);
         $proyectoData['metodologia_nombre'] = $metodologia->nombre;
 
-        return view('gestionProyectos.create-step4', compact('proyectoData', 'plantillas', 'miembrosData'));
+        return view('gestionProyectos.create-step4', compact('proyectoData', 'plantillas', 'miembrosData', 'lider'));
     }
 
     /**
@@ -502,9 +526,10 @@ class ProyectoController extends Controller
         // Recuperar datos desde la sesión
         $proyectoData = session('proyecto_temp');
         $plantillasSeleccionadas = session('plantillas_seleccionadas', []);
-        $miembrosData = session('miembros_temp');
+        $miembrosData = session('miembros_temp', []);
+        $liderId = session('lider_id');
 
-        if (!$proyectoData || !$miembrosData) {
+        if (!$proyectoData || !$liderId) {
             return redirect()->route('proyectos.create')
                 ->with('error', 'Sesión expirada. Por favor, inicia el proceso nuevamente.');
         }
@@ -521,7 +546,7 @@ class ProyectoController extends Controller
                 'id_metodologia' => $proyectoData['id_metodologia'],
                 'fecha_inicio' => $proyectoData['fecha_inicio'],
                 'fecha_fin' => $proyectoData['fecha_fin'],
-                'creado_por' => Auth::id(),
+                'creado_por' => Auth::id(), // Solo para auditoría
             ]);
 
             // 2️⃣ Crear 1 equipo automático (Equipo Principal)
@@ -530,30 +555,38 @@ class ProyectoController extends Controller
                 'id' => $equipoId,
                 'proyecto_id' => $proyecto->id,
                 'nombre' => 'Equipo Principal - ' . $proyecto->nombre,
-                'lider_id' => Auth::id(), // Líder temporal
+                'lider_id' => $liderId, // ✅ Líder seleccionado explícitamente
             ]);
 
-            // 3️⃣ Asignar miembros al equipo
-            $liderId = null;
+            // 3️⃣ Asignar líder al equipo con rol de Líder (buscar rol líder)
+            $rolLider = Rol::where('nombre', 'LIKE', '%líder%')->orWhere('nombre', 'LIKE', '%lider%')->first();
+            if (!$rolLider) {
+                $rolLider = Rol::find(2); // Fallback al rol con id 2 si existe
+            }
+
+            if ($rolLider) {
+                DB::table('miembros_equipo')->insert([
+                    'equipo_id' => $equipoId,
+                    'usuario_id' => $liderId,
+                    'rol_id' => $rolLider->id,
+                ]);
+            }
+
+            // 4️⃣ Asignar miembros al equipo
             foreach ($miembrosData as $miembro) {
+                // Evitar duplicar al líder si ya está en los miembros
+                if ($miembro['usuario_id'] === $liderId) {
+                    continue;
+                }
+
                 DB::table('miembros_equipo')->insert([
                     'equipo_id' => $equipoId,
                     'usuario_id' => $miembro['usuario_id'],
                     'rol_id' => $miembro['rol_id'],
                 ]);
-
-                // Detectar líder (rol_id == 2 típicamente)
-                if ($miembro['rol_id'] == 2 && !$liderId) {
-                    $liderId = $miembro['usuario_id'];
-                }
             }
 
-            // Actualizar líder del equipo si se encontró
-            if ($liderId) {
-                $equipo->update(['lider_id' => $liderId]);
-            }
-
-            // 4️⃣ Crear EC desde plantillas seleccionadas
+            // 5️⃣ Crear EC desde plantillas seleccionadas
             $contadorEC = 0;
             $contadorTareas = 0;
             $contadorRelaciones = 0;
@@ -641,7 +674,7 @@ class ProyectoController extends Controller
             }
 
             // Limpiar sesión
-            session()->forget(['proyecto_temp', 'plantillas_seleccionadas', 'miembros_temp']);
+            session()->forget(['proyecto_temp', 'plantillas_seleccionadas', 'miembros_temp', 'lider_id']);
 
             DB::commit();
 
@@ -686,7 +719,7 @@ class ProyectoController extends Controller
      */
     public function cancel()
     {
-        session()->forget(['proyecto_temp', 'plantillas_seleccionadas', 'miembros_temp']);
+        session()->forget(['proyecto_temp', 'plantillas_seleccionadas', 'miembros_temp', 'lider_id']);
 
         return redirect()->route('dashboard')
             ->with('info', 'Proceso de creación de proyecto cancelado.');
@@ -697,24 +730,57 @@ class ProyectoController extends Controller
      */
     public function trazabilidad(Proyecto $proyecto)
     {
-        // Cargar todos los EC con sus relaciones
+        // Cargar todos los EC con sus relaciones y versiones
         $elementos = \App\Models\ElementoConfiguracion::where('proyecto_id', $proyecto->id)
             ->with([
                 'relacionesDesde.elementoHacia',
-                'relacionesHacia.elementoDesde'
+                'relacionesHacia.elementoDesde',
+                'versiones.commit',
+                'versiones.creador',
+                'versiones' => function($query) {
+                    $query->orderBy('creado_en', 'desc');
+                }
             ])
+            ->orderBy('tipo')
             ->orderBy('codigo_ec')
             ->get();
 
-        // Encontrar elementos raíz (sin dependencias hacia ellos)
-        $elementosRaiz = $elementos->filter(function($elemento) {
-            return $elemento->relacionesHacia->isEmpty();
+        // Construir matriz de trazabilidad
+        $matriz = [];
+        foreach ($elementos as $desde) {
+            $matriz[$desde->id] = [];
+            foreach ($elementos as $hacia) {
+                $matriz[$desde->id][$hacia->id] = null;
+            }
+        }
+
+        // Llenar matriz con relaciones
+        foreach ($elementos as $elemento) {
+            foreach ($elemento->relacionesDesde as $relacion) {
+                $matriz[$elemento->id][$relacion->hacia_ec] = $relacion;
+            }
+        }
+
+        // Preparar datos para JavaScript (evita problemas de sintaxis en Blade)
+        $elementosJS = $elementos->map(function($e) {
+            return [
+                'id' => $e->id,
+                'codigo' => $e->codigo_ec,
+                'titulo' => $e->titulo,
+                'tipo' => $e->tipo,
+                'estado' => $e->estado,
+                'versiones' => $e->versiones->map(function($v) {
+                    return [
+                        'version' => $v->version,
+                        'estado' => $v->estado,
+                        'commit_id' => $v->commit_id,
+                        'creado_en' => $v->creado_en->format('d/m/Y H:i'),
+                    ];
+                })
+            ];
         });
 
-        // Organizar en niveles jerárquicos
-        $niveles = $this->organizarEnNiveles($elementos, $elementosRaiz);
-
-        return view('gestionProyectos.trazabilidad', compact('proyecto', 'elementos', 'niveles'));
+        return view('gestionProyectos.trazabilidad', compact('proyecto', 'elementos', 'matriz', 'elementosJS'));
     }
 
     /**
@@ -782,8 +848,13 @@ class ProyectoController extends Controller
     {
         $this->verificarAccesoProyecto($proyecto);
 
-        $usuarios = Usuario::all(); // O filtrar por usuarios disponibles
-        $roles = Rol::all();
+        $usuarios = Usuario::all();
+
+        // Filtrar roles por metodología del proyecto
+        $roles = Rol::where(function($query) use ($proyecto) {
+            $query->where('metodologia_id', $proyecto->id_metodologia)
+                  ->orWhereNull('metodologia_id');
+        })->orderBy('nombre')->get();
 
         return view('gestionProyectos.equipos.create', compact('proyecto', 'usuarios', 'roles'));
     }
@@ -846,7 +917,12 @@ class ProyectoController extends Controller
         }
 
         $usuarios = Usuario::all();
-        $roles = Rol::all();
+
+        // Filtrar roles por metodología del proyecto
+        $roles = Rol::where(function($query) use ($proyecto) {
+            $query->where('metodologia_id', $proyecto->id_metodologia)
+                  ->orWhereNull('metodologia_id');
+        })->orderBy('nombre')->get();
 
         return view('gestionProyectos.equipos.edit', compact('proyecto', 'equipo', 'usuarios', 'roles'));
     }
@@ -955,12 +1031,12 @@ class ProyectoController extends Controller
     private function verificarAccesoProyecto(Proyecto $proyecto)
     {
         $usuarioId = Auth::user()->id;
-        $esCreador = $proyecto->creado_por === $usuarioId;
+        $esLider = $proyecto->equipos()->where('lider_id', $usuarioId)->exists();
         $esMiembro = $proyecto->equipos()->whereHas('miembros', function($q) use ($usuarioId) {
             $q->where('usuario_id', $usuarioId);
         })->exists();
 
-        if (!$esCreador && !$esMiembro) {
+        if (!$esLider && !$esMiembro) {
             abort(403, 'No tienes acceso a este proyecto');
         }
     }
@@ -981,7 +1057,11 @@ class ProyectoController extends Controller
         // Obtener equipos del proyecto
         $equipos = $proyecto->equipos;
 
-        $roles = Rol::all();
+        // Filtrar roles por metodología del proyecto
+        $roles = Rol::where(function($query) use ($proyecto) {
+            $query->where('metodologia_id', $proyecto->id_metodologia)
+                  ->orWhereNull('metodologia_id');
+        })->orderBy('nombre')->get();
 
         return view('gestionProyectos.miembros.index', compact('proyecto', 'miembrosProyecto', 'usuariosDisponibles', 'roles', 'equipos'));
     }
@@ -1057,9 +1137,10 @@ class ProyectoController extends Controller
             return back()->withErrors(['error' => 'El proyecto debe tener al menos un miembro']);
         }
 
-        // Verificar que no sea el creador del proyecto
-        if ($proyecto->creado_por === $usuarioId) {
-            return back()->withErrors(['error' => 'No se puede remover al creador del proyecto']);
+        // Verificar que no sea el líder del equipo
+        $esLider = $proyecto->equipos()->where('lider_id', $usuarioId)->exists();
+        if ($esLider) {
+            return back()->withErrors(['error' => 'No se puede remover al líder del equipo. Primero asigna otro líder.']);
         }
 
         DB::table('usuarios_roles')

@@ -398,10 +398,60 @@
         <form method="dialog" class="modal-backdrop"><button>close</button></form>
     </dialog>
 
+    <!-- Modal: Solicitar Commit para Completar Tarea -->
+    <dialog id="modalCommit" class="modal">
+        <div class="modal-box bg-white">
+            <h3 class="font-bold text-lg text-black mb-4">🔗 Completar Tarea</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                Para completar esta tarea, necesitas proporcionar la URL del commit de GitHub que representa el trabajo realizado.
+            </p>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text text-black font-semibold">URL del Commit en GitHub *</span>
+                </label>
+                <input type="url"
+                       id="commitUrlInput"
+                       class="input input-bordered w-full bg-white text-black"
+                       placeholder="https://github.com/usuario/repo/commit/abc123..."
+                       required>
+                <label class="label">
+                    <span class="label-text-alt text-gray-500">
+                        Ejemplo: https://github.com/usuario/repo/commit/abc123def456
+                    </span>
+                </label>
+            </div>
+
+            <div class="alert alert-info text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <p><strong>¿Qué sucederá?</strong></p>
+                    <ul class="list-disc list-inside text-xs mt-1">
+                        <li>Se creará/actualizará el Elemento de Configuración (EC)</li>
+                        <li>Se registrará el commit en el sistema</li>
+                        <li>Se creará una versión en estado EN_REVISION</li>
+                        <li>El líder podrá revisarlo y aprobarlo</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="modal-action">
+                <button type="button" onclick="modalCommit.close()" class="btn btn-ghost text-black">Cancelar</button>
+                <button type="button" onclick="confirmarCommit()" class="btn bg-green-600 text-white hover:bg-green-700">
+                    Completar Tarea
+                </button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
     <!-- Drag & Drop Script -->
     <script>
         let tareaArrastrada = null;
         let vistaActual = 'kanban'; // Por defecto mostrar Kanban
+        let tareaCompletarData = null; // Datos de la tarea a completar
 
         // Inicializar drag & drop después de cargar el DOM
         document.addEventListener('DOMContentLoaded', function() {
@@ -441,43 +491,144 @@
                     if (tareaArrastrada) {
                         const tareaId = tareaArrastrada.dataset.tareaId;
                         const faseId = this.closest('.kanban-column').dataset.faseId;
+                        const faseNombre = this.closest('.kanban-column').querySelector('h3').textContent.trim();
 
-                        // Mover visualmente primero
-                        const emptyMsg = this.querySelector('.text-center.text-gray-400');
-                        if (emptyMsg) {
-                            emptyMsg.remove();
+                        // Verificar si se está moviendo a una fase de "Completado" según la metodología
+                        // SCRUM: "Done"
+                        // CASCADA: "Despliegue", "Mantenimiento"
+                        const metodologia = '{{ $metodologia->nombre }}';
+                        let esEstadoCompletado = false;
+
+                        if (metodologia === 'Scrum') {
+                            // En Scrum, solo "Done" requiere commit
+                            esEstadoCompletado = faseNombre.includes('Done');
+                        } else if (metodologia === 'Cascada') {
+                            // En Cascada, "Implementación" y fases posteriores pueden requerir commit
+                            // Pero típicamente solo "Despliegue" requiere commit obligatorio
+                            esEstadoCompletado = faseNombre.includes('Despliegue') || faseNombre.includes('Mantenimiento');
                         }
-                        this.appendChild(tareaArrastrada);
 
-                        // Actualizar contador de la fase origen y destino
-                        actualizarContadores();
+                        if (esEstadoCompletado) {
+                            // Guardar datos para procesar después de obtener commit
+                            tareaCompletarData = {
+                                tareaId: tareaId,
+                                faseId: faseId,
+                                tareaElement: tareaArrastrada,
+                                dropZone: this
+                            };
 
-                        // Actualizar en servidor
-                        fetch(`/proyectos/{{ $proyecto->id }}/tareas/${tareaId}/cambiar-fase`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify({ id_fase: faseId })
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                console.log('✅ Tarea movida exitosamente');
-                                // Opcional: mostrar notificación
-                            } else {
-                                console.error('❌ Error:', data.message);
-                                location.reload(); // Recargar si falla
-                            }
-                        })
-                        .catch(err => {
-                            console.error('❌ Error al mover tarea:', err);
-                            location.reload(); // Recargar si falla
-                        });
+                            // Mostrar modal para pedir commit_url
+                            document.getElementById('commitUrlInput').value = '';
+                            modalCommit.showModal();
+                            return; // No procesar ahora, esperar confirmación
+                        }
+
+                        // Si no es estado completado, procesar normalmente
+                        procesarCambioFase(tareaId, faseId, tareaArrastrada, this);
                     }
                 });
             });
+        }
+
+        // Procesar cambio de fase (después de obtener commit si es necesario)
+        function procesarCambioFase(tareaId, faseId, tareaElement, dropZone, commitUrl = null) {
+            // Mover visualmente primero
+            const emptyMsg = dropZone.querySelector('.text-center.text-gray-400');
+            if (emptyMsg) {
+                emptyMsg.remove();
+            }
+            dropZone.appendChild(tareaElement);
+
+            // Actualizar contador de la fase origen y destino
+            actualizarContadores();
+
+            // Preparar datos para enviar
+            const datos = { id_fase: faseId };
+            if (commitUrl) {
+                datos.commit_url = commitUrl;
+            }
+
+            // Actualizar en servidor
+            fetch(`/proyectos/{{ $proyecto->id }}/tareas/${tareaId}/cambiar-fase`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(datos)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ Tarea movida exitosamente');
+                    // Mostrar mensaje de éxito
+                    if (commitUrl) {
+                        mostrarNotificacion('✅ Tarea completada y EC creado en revisión', 'success');
+                    }
+                } else if (data.requiere_commit) {
+                    // Si el backend dice que requiere commit, revertir y pedir commit
+                    location.reload();
+                } else {
+                    console.error('❌ Error:', data.error || data.message);
+                    mostrarNotificacion('❌ Error: ' + (data.error || data.message), 'error');
+                    location.reload(); // Recargar si falla
+                }
+            })
+            .catch(err => {
+                console.error('❌ Error al mover tarea:', err);
+                mostrarNotificacion('❌ Error al mover tarea', 'error');
+                location.reload(); // Recargar si falla
+            });
+        }
+
+        // Confirmar commit y completar tarea
+        function confirmarCommit() {
+            const commitUrl = document.getElementById('commitUrlInput').value.trim();
+
+            if (!commitUrl) {
+                alert('Por favor ingresa la URL del commit');
+                return;
+            }
+
+            // Validar formato básico de URL de GitHub
+            if (!commitUrl.includes('github.com') || !commitUrl.includes('/commit/')) {
+                alert('La URL debe ser un commit válido de GitHub.\nEjemplo: https://github.com/usuario/repo/commit/abc123');
+                return;
+            }
+
+            // Cerrar modal
+            modalCommit.close();
+
+            // Procesar el cambio de fase con el commit
+            if (tareaCompletarData) {
+                procesarCambioFase(
+                    tareaCompletarData.tareaId,
+                    tareaCompletarData.faseId,
+                    tareaCompletarData.tareaElement,
+                    tareaCompletarData.dropZone,
+                    commitUrl
+                );
+                tareaCompletarData = null;
+            }
+        }
+
+        // Función para mostrar notificaciones
+        function mostrarNotificacion(mensaje, tipo = 'info') {
+            // Crear elemento de notificación
+            const notif = document.createElement('div');
+            notif.className = `alert alert-${tipo === 'success' ? 'success' : 'error'} fixed top-4 right-4 max-w-md z-50 shadow-lg`;
+            notif.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${tipo === 'success' ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'}" />
+                </svg>
+                <span>${mensaje}</span>
+            `;
+            document.body.appendChild(notif);
+
+            // Remover después de 4 segundos
+            setTimeout(() => {
+                notif.remove();
+            }, 4000);
         }
 
         function actualizarContadores() {

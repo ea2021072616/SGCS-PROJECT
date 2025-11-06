@@ -29,31 +29,41 @@
                         <h4 class="font-semibold mb-3 text-yellow-800">¿Por qué no puedo acceder?</h4>
                         <ul class="list-disc list-inside space-y-2 text-sm text-yellow-700">
                             <li>Solo los miembros del CCB pueden acceder al dashboard</li>
-                            <li>El creador del proyecto también tiene acceso completo</li>
-                            <li>Los miembros del CCB son designados por el creador del proyecto</li>
+                            <li>El líder del proyecto también tiene acceso completo</li>
+                            <li>Los miembros del CCB son designados por el líder del proyecto</li>
                         </ul>
                     </div>
 
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 text-left max-w-2xl mx-auto">
                         <h4 class="font-semibold mb-3 text-blue-800">¿Qué puedes hacer?</h4>
                         <ul class="list-disc list-inside space-y-2 text-sm text-blue-700">
-                            <li>Contacta al creador del proyecto: <strong>{{ $proyecto->creador->nombre_completo }}</strong></li>
+                            @php
+                                $equipoLider = $proyecto->equipos()->whereNotNull('lider_id')->first();
+                                $liderProyecto = $equipoLider ? $equipoLider->lider : null;
+                            @endphp
+                            @if($liderProyecto)
+                                <li>Contacta al líder del proyecto: <strong>{{ $liderProyecto->nombre_completo }}</strong></li>
+                            @else
+                                <li>Contacta al líder del equipo del proyecto</li>
+                            @endif
                             <li>Pídele que te agregue como miembro del CCB</li>
-                            <li>El creador puede configurar el CCB desde: <a href="{{ route('proyectos.ccb.configurar', $proyecto) }}" class="underline">Configurar CCB</a></li>
+                            <li>El líder puede configurar el CCB desde: <a href="{{ route('proyectos.ccb.configurar', $proyecto) }}" class="underline">Configurar CCB</a></li>
                         </ul>
                     </div>
 
                     <div class="space-y-3">
-                        <div class="text-sm text-gray-500 mb-4">
-                            Creador del proyecto: {{ $proyecto->creador->nombre_completo }}
-                        </div>
+                        @if($liderProyecto)
+                            <div class="text-sm text-gray-500 mb-4">
+                                Líder del proyecto: {{ $liderProyecto->nombre_completo }}
+                            </div>
+                        @endif
 
                         <div class="flex justify-center space-x-4">
                             <a href="{{ route('proyectos.show', $proyecto) }}" class="btn btn-primary">
                                 ← Volver al Proyecto
                             </a>
 
-                            @if($proyecto->creado_por === Auth::id())
+                            @if($proyecto->esLider(Auth::id()))
                                 <a href="{{ route('proyectos.ccb.configurar', $proyecto) }}" class="btn btn-secondary">
                                     Configurar CCB
                                 </a>

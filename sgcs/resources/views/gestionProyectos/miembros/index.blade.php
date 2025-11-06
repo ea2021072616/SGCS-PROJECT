@@ -96,8 +96,11 @@
                                                     </select>
                                                 </form>
 
-                                                <!-- Botón de remover (solo si no es el creador) -->
-                                                @if($miembro->id !== $proyecto->creado_por && $miembrosProyecto->count() > 1)
+                                                <!-- Botón de remover (solo si no es líder del equipo) -->
+                                                @php
+                                                    $esLiderEquipo = $proyecto->equipos()->where('lider_id', $miembro->id)->exists();
+                                                @endphp
+                                                @if(!$esLiderEquipo && $miembrosProyecto->count() > 1)
                                                     <form action="{{ route('proyectos.miembros.destroy', [$proyecto, $miembro->id]) }}" method="POST"
                                                           onsubmit="return confirm('¿Estás seguro de remover a {{ $miembro->name }} del proyecto?')">
                                                         @csrf
@@ -110,8 +113,8 @@
                                                     </form>
                                                 @else
                                                     <span class="text-xs text-gray-400 px-2 py-1 bg-gray-100 rounded">
-                                                        @if($miembro->id === $proyecto->creado_por)
-                                                            Creador
+                                                        @if($esLiderEquipo)
+                                                            Líder
                                                         @else
                                                             Último miembro
                                                         @endif

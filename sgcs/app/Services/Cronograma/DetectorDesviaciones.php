@@ -30,13 +30,13 @@ class DetectorDesviaciones
 
             // Detectar atraso real
             if ($tarea->fecha_fin && Carbon::parse($tarea->fecha_fin)->lt($hoy)) {
-                $diasAtraso = $hoy->diffInDays(Carbon::parse($tarea->fecha_fin));
+                $diasAtraso = Carbon::parse($tarea->fecha_fin)->diffInDays($hoy);
 
                 $desviaciones->push([
                     'tipo' => 'atraso',
                     'severidad' => $this->calcularSeveridad($tarea, $diasAtraso),
                     'tarea' => $tarea,
-                    'dias_atraso' => $diasAtraso,
+                    'dias_atraso' => round($diasAtraso, 0), // Redondear a entero
                     'en_ruta_critica' => $tarea->es_ruta_critica ?? false,
                     'impacto' => $this->calcularImpactoAtraso($tarea, $diasAtraso),
                 ]);
@@ -254,13 +254,16 @@ class DetectorDesviaciones
     /**
      * Calcular impacto de un atraso
      */
-    private function calcularImpactoAtraso(TareaProyecto $tarea, int $diasAtraso): string
+    private function calcularImpactoAtraso(TareaProyecto $tarea, int|float $diasAtraso): string
     {
+        // Redondear a entero para mejor lectura
+        $diasAtraso = round($diasAtraso, 0);
+
         if ($tarea->es_ruta_critica) {
             return "Afecta directamente la fecha de entrega del proyecto (+{$diasAtraso} días)";
         }
 
-        $holgura = $tarea->holgura_dias ?? 0;
+        $holgura = round($tarea->holgura_dias ?? 0, 0);
 
         if ($diasAtraso > $holgura) {
             $exceso = $diasAtraso - $holgura;

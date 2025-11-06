@@ -126,7 +126,7 @@ class CronogramaInteligenteService
     /**
      * Aprobar un ajuste propuesto
      */
-    public function aprobarAjuste(AjusteCronograma $ajuste, int $aprobadorId): bool
+    public function aprobarAjuste(AjusteCronograma $ajuste, string $aprobadorId): bool
     {
         if ($ajuste->estado !== 'propuesto') {
             return false;
@@ -144,7 +144,7 @@ class CronogramaInteligenteService
     /**
      * Rechazar un ajuste propuesto
      */
-    public function rechazarAjuste(AjusteCronograma $ajuste, string $motivo, int $rechazadorId): bool
+    public function rechazarAjuste(AjusteCronograma $ajuste, string $motivo, string $rechazadorId): bool
     {
         if ($ajuste->estado !== 'propuesto') {
             return false;

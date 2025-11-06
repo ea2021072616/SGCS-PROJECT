@@ -105,7 +105,7 @@
                                         </span>
                                         @if($item->versionEc)
                                         <span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
-                                            v{{ $item->versionEc->numero_version }}
+                                            v{{ $item->versionEc->version }}
                                         </span>
                                         @endif
                                     </div>

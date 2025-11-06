@@ -25,7 +25,16 @@ class Rol extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'metodologia_id',
     ];
+
+    /**
+     * Relación: Un rol pertenece a una metodología (opcional).
+     */
+    public function metodologia()
+    {
+        return $this->belongsTo(Metodologia::class, 'metodologia_id', 'id_metodologia');
+    }
 
     /**
      * Relación: Un rol tiene muchos usuarios.

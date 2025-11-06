@@ -65,7 +65,7 @@ class ElementoConfiguracion extends Model
 
     public function versiones()
     {
-        return $this->hasMany(VersionEC::class, 'ec_id');
+        return $this->hasMany(VersionEC::class, 'ec_id')->orderBy('version', 'desc');
     }
 
     public function creador()

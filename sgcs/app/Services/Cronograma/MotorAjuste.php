@@ -249,14 +249,22 @@ class MotorAjuste
         $diasRecuperados = 0;
         $costoAdicional = 0;
 
-        // Obtener todos los miembros del proyecto
-        $miembros = $proyecto->equipos()
-            ->with('miembros.usuario')
-            ->get()
-            ->pluck('miembros')
-            ->flatten();
+        // Obtener todos los usuarios miembros del proyecto
+        $equipos = $proyecto->equipos()
+            ->with('miembros')
+            ->get();
 
-        if ($miembros->isEmpty()) {
+        $usuarios = collect();
+        foreach ($equipos as $equipo) {
+            foreach ($equipo->miembros as $usuario) {
+                // Los miembros ya son usuarios directamente (belongsToMany)
+                if (!$usuarios->contains('id', $usuario->id)) {
+                    $usuarios->push($usuario);
+                }
+            }
+        }
+
+        if ($usuarios->isEmpty()) {
             return null;
         }
 
@@ -270,7 +278,7 @@ class MotorAjuste
             $responsableActual = $tarea->responsable;
 
             // Buscar recurso con más experiencia/disponibilidad
-            $mejorRecurso = $this->encontrarMejorRecurso($tarea, $miembros, $responsableActual);
+            $mejorRecurso = $this->encontrarMejorRecurso($tarea, $usuarios, $responsableActual);
 
             if ($mejorRecurso && $mejorRecurso->id != $responsableActual) {
                 $reduccionEstimada = ceil($desv['dias_atraso'] * 0.3); // 30% de mejora estimada
@@ -485,11 +493,11 @@ class MotorAjuste
         return min($duracion1, $duracion2);
     }
 
-    private function encontrarMejorRecurso(TareaProyecto $tarea, Collection $miembros, ?int $excluirId): ?object
+    private function encontrarMejorRecurso(TareaProyecto $tarea, Collection $usuarios, ?string $excluirId): ?object
     {
-        // Filtrar miembros disponibles
-        $candidatos = $miembros->filter(function ($miembro) use ($excluirId) {
-            return $miembro->usuario && $miembro->usuario->id != $excluirId;
+        // Filtrar usuarios disponibles
+        $candidatos = $usuarios->filter(function ($usuario) use ($excluirId) {
+            return $usuario->id != $excluirId;
         });
 
         if ($candidatos->isEmpty()) {
@@ -497,6 +505,6 @@ class MotorAjuste
         }
 
         // Retornar el primer candidato (podría mejorarse con algoritmo de scoring)
-        return $candidatos->first()->usuario;
+        return $candidatos->first();
     }
 }

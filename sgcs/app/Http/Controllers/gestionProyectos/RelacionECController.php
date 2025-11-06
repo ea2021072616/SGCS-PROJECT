@@ -13,12 +13,36 @@ use Illuminate\Support\Str;
 class RelacionECController extends Controller
 {
     /**
-     * Verifica que el usuario sea el creador del proyecto
+     * Verifica que el usuario sea el líder del proyecto (para crear/editar)
      */
-    private function verificarCreador(Proyecto $proyecto)
+    private function verificarLider(Proyecto $proyecto)
     {
-        if ($proyecto->creado_por !== Auth::user()->id) {
-            abort(403, 'No tienes permiso para gestionar las relaciones de este proyecto.');
+        if (!$proyecto->esLider(Auth::user()->id)) {
+            abort(403, 'Solo el líder del equipo puede gestionar las relaciones de este proyecto.');
+        }
+    }
+
+    /**
+     * Verifica que el usuario sea miembro del proyecto (para ver)
+     */
+    private function verificarAcceso(Proyecto $proyecto)
+    {
+        $usuarioId = Auth::user()->id;
+
+        // Verificar si es líder
+        if ($proyecto->esLider($usuarioId)) {
+            return;
+        }
+
+        // Verificar si es miembro de algún equipo
+        $esMiembro = $proyecto->equipos()
+            ->whereHas('miembros', function($q) use ($usuarioId) {
+                $q->where('usuario_id', $usuarioId);
+            })
+            ->exists();
+
+        if (!$esMiembro) {
+            abort(403, 'No tienes permiso para acceder a este proyecto.');
         }
     }
 
@@ -27,7 +51,7 @@ class RelacionECController extends Controller
      */
     public function create(Proyecto $proyecto, ElementoConfiguracion $elemento)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarLider($proyecto);
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);
@@ -47,7 +71,7 @@ class RelacionECController extends Controller
      */
     public function store(Request $request, Proyecto $proyecto, ElementoConfiguracion $elemento)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarLider($proyecto);
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);
@@ -97,7 +121,7 @@ class RelacionECController extends Controller
      */
     public function index(Proyecto $proyecto, ElementoConfiguracion $elemento)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarAcceso($proyecto); // Solo verificar acceso para VER
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);
@@ -126,7 +150,7 @@ class RelacionECController extends Controller
      */
     public function destroy(Proyecto $proyecto, ElementoConfiguracion $elemento, RelacionEC $relacion)
     {
-        $this->verificarCreador($proyecto);
+        $this->verificarLider($proyecto);
 
         if ($elemento->proyecto_id !== $proyecto->id) {
             abort(404);

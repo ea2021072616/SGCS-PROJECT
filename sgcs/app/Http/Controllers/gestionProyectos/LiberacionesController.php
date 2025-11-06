@@ -41,7 +41,7 @@ class LiberacionesController extends Controller
         $elementosDisponibles = ElementoConfiguracion::where('proyecto_id', $proyecto->id)
             ->whereIn('estado', ['aprobado', 'liberado'])
             ->with(['versiones' => function($query) {
-                $query->orderBy('numero_version', 'desc');
+                $query->orderBy('version', 'desc');
             }])
             ->get();
 
@@ -77,7 +77,7 @@ class LiberacionesController extends Controller
             foreach ($request->elementos as $ecId) {
                 // Obtener la última versión del elemento
                 $elemento = ElementoConfiguracion::with(['versiones' => function($query) {
-                    $query->orderBy('numero_version', 'desc')->limit(1);
+                    $query->orderBy('version', 'desc')->limit(1);
                 }])->find($ecId);
 
                 $versionId = $elemento && $elemento->versiones->isNotEmpty()
@@ -128,7 +128,7 @@ class LiberacionesController extends Controller
 
             // Obtener la última versión
             $elemento = ElementoConfiguracion::with(['versiones' => function($query) {
-                $query->orderBy('numero_version', 'desc')->limit(1);
+                $query->orderBy('version', 'desc')->limit(1);
             }])->find($ecId);
 
             $versionId = $elemento && $elemento->versiones->isNotEmpty()

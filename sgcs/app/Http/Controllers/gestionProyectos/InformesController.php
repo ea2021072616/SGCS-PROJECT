@@ -228,10 +228,27 @@ class InformesController extends Controller
                 $tareasActivas = $tareasAsignadas->whereNotIn('estado', ['COMPLETADA', 'Done', 'DONE']);
                 $tareasCompletadas = $tareasAsignadas->where('estado', 'COMPLETADA');
 
-                // Horas asignadas
-                $horasAsignadas = $tareasActivas->sum('horas_estimadas') ?? 0;
+                // Horas asignadas - calcular de forma inteligente
+                $horasAsignadas = 0;
+                foreach ($tareasActivas as $tarea) {
+                    if ($tarea->horas_estimadas && $tarea->horas_estimadas > 0) {
+                        // Usar horas_estimadas si existe
+                        $horasAsignadas += $tarea->horas_estimadas;
+                    } elseif ($tarea->fecha_inicio && $tarea->fecha_fin) {
+                        // Calcular por duración: días laborables * 8 horas
+                        $dias = \Carbon\Carbon::parse($tarea->fecha_inicio)
+                            ->diffInDays(\Carbon\Carbon::parse($tarea->fecha_fin)) + 1;
+                        $horasAsignadas += $dias * 8;
+                    } else {
+                        // Fallback: asumir 8 horas por tarea
+                        $horasAsignadas += 8;
+                    }
+                }
+
                 $horasDisponibles = 40; // Semana laboral estándar
-                $utilizacion = min(100, round(($horasAsignadas / $horasDisponibles) * 100, 1));
+                $utilizacion = $horasDisponibles > 0
+                    ? min(100, round(($horasAsignadas / $horasDisponibles) * 100, 1))
+                    : 0;
 
                 // Determinar nivel de carga
                 $nivelCarga = 'normal';
@@ -246,7 +263,7 @@ class InformesController extends Controller
                     'tareas_totales' => $tareasAsignadas->count(),
                     'tareas_activas' => $tareasActivas->count(),
                     'tareas_completadas' => $tareasCompletadas->count(),
-                    'horas_asignadas' => $horasAsignadas,
+                    'horas_asignadas' => round($horasAsignadas, 1),
                     'horas_disponibles' => $horasDisponibles,
                     'utilizacion' => $utilizacion,
                     'nivel_carga' => $nivelCarga,
