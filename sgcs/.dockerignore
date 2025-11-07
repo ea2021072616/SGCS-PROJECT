@@ -45,8 +45,6 @@ docs
 
 # Docker
 docker-compose*.yml
-Dockerfile
-.dockerignore
 
 # Misc
 .DS_Store
