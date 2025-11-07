@@ -49,3 +49,10 @@ docker-compose*.yml
 # Misc
 .DS_Store
 Thumbs.db
+
+# Important: DO NOT ignore these files needed for Docker build
+!docker/
+!resources/
+!vite.config.js
+!postcss.config.js
+!tailwind.config.js
