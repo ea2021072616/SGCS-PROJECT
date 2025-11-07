@@ -11,8 +11,8 @@ WORKDIR /app
 # Copiar archivos de configuración de Node
 COPY package*.json ./
 
-# Instalar dependencias de Node
-RUN npm ci --only=production
+# Instalar TODAS las dependencias (incluyendo devDependencies para vite build)
+RUN npm ci
 
 # Copiar archivos necesarios para el build
 COPY vite.config.js postcss.config.js tailwind.config.js ./
