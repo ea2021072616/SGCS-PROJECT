@@ -16,11 +16,7 @@
                 <div class="card-body">
                     <div class="flex items-start justify-between">
                         <div class="flex items-start gap-4">
-                            <div class="avatar placeholder">
-                                <div class="bg-gray-200 text-black rounded-xl w-16 h-16 flex items-center justify-center">
-                                    <span class="text-xl font-bold">{{ strtoupper(substr($proyecto->codigo ?? $proyecto->nombre, 0, 2)) }}</span>
-                                </div>
-                            </div>
+                            @include('partials.avatar-proyecto', ['proyecto' => $proyecto])
                             <div>
                                 <h1 class="text-2xl font-bold text-gray-900">{{ $proyecto->nombre }}</h1>
                                 <p class="text-sm text-gray-600 mt-1">{{ $proyecto->codigo }} • {{ $proyecto->metodologia->nombre ?? 'Sin metodología' }}</p>
@@ -207,7 +203,7 @@
                             </svg>
                         </div>
                     </div>
-                    <p class="text-2xl font-bold text-gray-900">0</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ $elementosConfiguracion ? $elementosConfiguracion->count() : 0 }}</p>
                 </div>
 
                 <div class="bg-white border border-gray-200 rounded-lg p-5">
@@ -219,79 +215,63 @@
                             </svg>
                         </div>
                     </div>
-                    <p class="text-2xl font-bold text-gray-900">0</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ $solicitudesCambio ? $solicitudesCambio->count() : 0 }}</p>
                 </div>
             </div>
 
             @if($metodologia === 'scrum')
-                <!-- Métricas Scrum adicionales -->
+                <!-- Métricas Scrum adicionales (estilo consistente con tarjetas superiores) -->
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
                     <!-- Sprint Activo -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-blue-700 font-medium">Sprint Activo</p>
-                                    <p class="text-3xl font-bold text-blue-800 mt-1">Sprint #1</p>
-                                </div>
-                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                    </svg>
-                                </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sprint Activo</span>
+                            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
                             </div>
                         </div>
+                        <p class="text-2xl font-bold text-gray-900">{{ $sprintActivo ? $sprintActivo->nombre : 'Sin sprint activo' }}</p>
                     </div>
 
                     <!-- Story Points -->
-                    <div class="bg-purple-50 border border-purple-200 rounded-lg shadow-sm">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-purple-700 font-medium">Story Points</p>
-                                    <p class="text-3xl font-bold text-purple-800 mt-1">0/0</p>
-                                </div>
-                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                                    </svg>
-                                </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Story Points</span>
+                            <div class="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
                             </div>
                         </div>
+                        <p class="text-2xl font-bold text-gray-900">{{ $storyPointsCompletados ?? 0 }}/{{ $storyPointsTotal ?? 0 }}</p>
                     </div>
 
                     <!-- Equipos Scrum -->
-                    <div class="bg-green-50 border border-green-200 rounded-lg shadow-sm">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-green-700 font-medium">Equipos Dev</p>
-                                    <p class="text-3xl font-bold text-green-800 mt-1">{{ $proyecto->equipos->count() }}</p>
-                                </div>
-                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                                    </svg>
-                                </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Equipos Dev</span>
+                            <div class="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                </svg>
                             </div>
                         </div>
+                        <p class="text-2xl font-bold text-gray-900">{{ $proyecto->equipos->count() }}</p>
                     </div>
 
                     <!-- Impedimentos -->
-                    <div class="bg-red-50 border border-red-200 rounded-lg shadow-sm">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-red-700 font-medium">Impedimentos</p>
-                                    <p class="text-3xl font-bold text-red-800 mt-1">0</p>
-                                </div>
-                                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                    </svg>
-                                </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Impedimentos</span>
+                            <div class="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
                             </div>
                         </div>
+                        <p class="text-2xl font-bold text-gray-900">0</p>
                     </div>
                 </div>
             @endif
@@ -354,65 +334,31 @@
             <!-- Acciones Rápidas -->
             <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-5">Acciones Rápidas</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button class="px-4 py-3 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
-                        Crear Elemento
-                    </button>
-                    <button class="px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                        </svg>
-                        Nueva Solicitud
-                    </button>
-                    <button class="px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        Programar Liberación
-                    </button>
-                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <a href="{{ route('proyectos.elementos.create', $proyecto) }}" title="Crear Elemento de Configuración" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors font-medium justify-center">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Crear Elemento
+                        </a>
+
+                        <a href="{{ route('proyectos.solicitudes.create', $proyecto) }}" title="Nueva Solicitud de Cambio" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors font-medium justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                            </svg>
+                            Nueva Solicitud
+                        </a>
+
+                        <a href="{{ route('proyectos.liberaciones.index', $proyecto) }}" title="Ver Liberaciones" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors font-medium justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            Ver Liberaciones
+                        </a>
+                    </div>
             </div>
 
-            <!-- Equipos del Proyecto -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6 mb-8">
-                <h3 class="text-lg font-semibold text-gray-900 mb-5">Equipos del Proyecto</h3>
-                @if($proyecto->equipos->count() > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @foreach($proyecto->equipos as $equipo)
-                            <div class="border border-gray-200 rounded-lg p-4">
-                                <h4 class="font-semibold text-gray-900 mb-2">{{ $equipo->nombre }}</h4>
-                                <p class="text-sm text-gray-600 mb-3">{{ $equipo->miembros->count() }} miembros</p>
-                                <div class="flex -space-x-2">
-                                    @foreach($equipo->miembros->take(5) as $miembro)
-                                        @if($miembro->usuario)
-                                            <div class="w-8 h-8 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-indigo-700">
-                                                {{ substr($miembro->usuario->nombre, 0, 1) }}
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                    @if($equipo->miembros->count() > 5)
-                                        <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-semibold text-gray-700">
-                                            +{{ $equipo->miembros->count() - 5 }}
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="text-center py-8">
-                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                            </svg>
-                        </div>
-                        <p class="text-sm text-gray-600">No hay equipos asignados</p>
-                    </div>
-                @endif
-            </div>
+            <!-- Equipos del Proyecto (removed per UX request) -->
 
             @elseif($tabActual === 'cascada' && $metodologia === 'cascada' && isset($fases))
                 <!-- ===== TAB: GESTIÓN CASCADA ===== -->
@@ -921,35 +867,6 @@
             <!-- Fin de tabs condicionales -->
 
             @if($tabActual === 'dashboard')
-            <!-- Módulos de Gestión (disponibles solo en Dashboard) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                <div class="card bg-white shadow-sm border-l-4 border-blue-500">
-                    <div class="card-body">
-                        <h3 class="font-semibold text-gray-900 mb-2">Crear Elemento de Configuración</h3>
-                        <p class="text-sm text-gray-600 mb-3">Agrega un nuevo elemento al proyecto</p>
-                        <a href="{{ route('proyectos.elementos.create', $proyecto) }}" class="btn btn-sm bg-blue-500 text-white hover:bg-blue-600 border-0">
-                            Crear Elemento
-                        </a>
-                    </div>
-                </div>
-
-                <div class="card bg-white shadow-sm border-l-4 border-orange-500">
-                    <div class="card-body">
-                        <h3 class="font-semibold text-gray-900 mb-2">Nueva Solicitud de Cambio</h3>
-                        <p class="text-sm text-gray-600 mb-3">Registra una solicitud de cambio</p>
-                        <a href="{{ route('proyectos.solicitudes.create', $proyecto) }}" class="btn btn-sm bg-orange-500 text-white hover:bg-orange-600 border-0">Crear Solicitud</a>
-                    </div>
-                </div>
-
-                <div class="card bg-white shadow-sm border-l-4 border-green-500">
-                    <div class="card-body">
-                        <h3 class="font-semibold text-gray-900 mb-2">Programar Liberación</h3>
-                        <p class="text-sm text-gray-600 mb-3">Planifica una nueva liberación</p>
-                        <button class="btn btn-sm bg-green-500 text-white hover:bg-green-600 border-0">Crear Liberación</button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Lista de Equipos (solo en Dashboard) -->
             <div class="card bg-white shadow-sm mt-6">
                 <div class="card-body">

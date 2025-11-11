@@ -23,9 +23,25 @@ class TareaProyectoController extends Controller
      */
     private function verificarCreador(Proyecto $proyecto)
     {
-        if ($proyecto->creado_por !== Auth::user()->id) {
-            abort(403, 'Solo el creador del proyecto puede gestionar el cronograma.');
+        $usuarioId = Auth::user()->id;
+
+        // Permitir al LÍDER de algún equipo del proyecto
+        $esLider = $proyecto->equipos()->where('lider_id', $usuarioId)->exists();
+        if ($esLider) {
+            return;
         }
+
+        // Como respaldo, permitir a miembros del proyecto (si está configurado así)
+        $esMiembro = $proyecto->equipos()
+            ->whereHas('miembros', function ($q) use ($usuarioId) {
+                $q->where('usuario_id', $usuarioId);
+            })->exists();
+
+        if ($esMiembro) {
+            return;
+        }
+
+        abort(403, 'Solo el líder o miembros del proyecto pueden gestionar el cronograma.');
     }
 
     /**

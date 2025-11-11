@@ -85,17 +85,17 @@
                             @elseif($analisisImpacto['nivel_impacto'] === 'MEDIO') bg-blue-50 border-blue-200
                             @else bg-green-50 border-green-200
                             @endif">
-                            <div class="flex items-start gap-3">
+                            <div class="flex items-start gap-3 text-gray-800">
                                 <svg class="w-5 h-5 text-current mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 <div>
-                                    <h4 class="font-semibold mb-2">Recomendaciones:</h4>
-                                    <ul class="text-sm space-y-1">
+                                    <h4 class="font-semibold mb-2 text-gray-900">Recomendaciones:</h4>
+                                    <ul class="text-sm space-y-1 text-gray-700">
                                         @foreach($analisisImpacto['recomendaciones'] as $recomendacion)
                                             <li class="flex items-start gap-2">
-                                                <span class="text-current mt-1">•</span>
-                                                <span>{{ $recomendacion }}</span>
+                                                <span class="text-gray-700 mt-1">•</span>
+                                                <span class="text-gray-700">{{ $recomendacion }}</span>
                                             </li>
                                         @endforeach
                                     </ul>

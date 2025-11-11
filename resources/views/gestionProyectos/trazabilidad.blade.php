@@ -205,13 +205,13 @@
                                             <div class="overflow-x-auto mt-2">
                                                 <table class="table table-xs">
                                                     <thead>
-                                                        <tr class="bg-gray-100">
-                                                            <th>Versión</th>
-                                                            <th>Estado</th>
-                                                            <th>Creado por</th>
-                                                            <th>Fecha</th>
-                                                            <th>Commit</th>
-                                                            <th>Acciones</th>
+                                                        <tr class="bg-gray-100 text-gray-900">
+                                                            <th class="px-2 py-1 text-xs font-semibold border border-gray-300">Versión</th>
+                                                            <th class="px-2 py-1 text-xs font-semibold border border-gray-300">Estado</th>
+                                                            <th class="px-2 py-1 text-xs font-semibold border border-gray-300">Creado por</th>
+                                                            <th class="px-2 py-1 text-xs font-semibold border border-gray-300">Fecha</th>
+                                                            <th class="px-2 py-1 text-xs font-semibold border border-gray-300">Commit</th>
+                                                            <th class="px-2 py-1 text-xs font-semibold border border-gray-300">Acciones</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>

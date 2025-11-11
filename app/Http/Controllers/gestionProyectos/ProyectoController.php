@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Models\Sprint;
+use Illuminate\Support\Facades\Schema;
 
 class ProyectoController extends Controller
 {
@@ -194,6 +196,11 @@ class ProyectoController extends Controller
         $elementosConfiguracion = null;
         $solicitudesCambio = null;
 
+    // Sprint activo y story points (para Scrum)
+    $sprintActivo = null;
+    $storyPointsTotal = 0;
+    $storyPointsCompletados = 0;
+
         // **CARGAR DATOS ADICIONALES PARA METODOLOGÍA CASCADA**
         $fases = null;
         $tareas = null;
@@ -210,6 +217,24 @@ class ProyectoController extends Controller
             ->with(['solicitante', 'items.elementoConfiguracion', 'votos.usuario'])
             ->orderBy('creado_en', 'desc')
             ->get();
+
+        // Si es metodología Scrum, intentar cargar el sprint activo y calcular story points
+        if (strtolower($proyecto->metodologia->nombre ?? '') === 'scrum') {
+            // Evitar consultas si la tabla no existe (ej. entorno sin migraciones)
+            if (Schema::hasTable('sprints')) {
+                $sprintActivo = Sprint::sprintActivo($proyecto->id);
+                if ($sprintActivo) {
+                    $sprintActivo->load('userStories');
+                    $storyPointsTotal = $sprintActivo->userStories->sum('story_points');
+                    $storyPointsCompletados = $sprintActivo->userStories->where('estado', 'Completado')->sum('story_points');
+                }
+            } else {
+                // Mantener valores por defecto (0 / null) si no existe la tabla
+                $sprintActivo = null;
+                $storyPointsTotal = 0;
+                $storyPointsCompletados = 0;
+            }
+        }
 
         // Verificar si el usuario es miembro del CCB
         $ccb = $proyecto->hasOne(\App\Models\ComiteCambio::class, 'proyecto_id')->first();
@@ -297,6 +322,9 @@ class ProyectoController extends Controller
         return view($vista, compact(
             'proyecto',
             'esLider',
+            'sprintActivo',
+            'storyPointsTotal',
+            'storyPointsCompletados',
             'miRol',
             'miEquipo',
             'rolEnProyecto',

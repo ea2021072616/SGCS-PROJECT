@@ -61,8 +61,8 @@
                                 </svg>
                             </div>
                         </div>
-                        <h3 class="text-teal-600 text-sm font-semibold mb-1">Total Liberaciones</h3>
-                        <p class="text-4xl font-bold text-teal-700 mb-1">{{ $totalLiberaciones }}</p>
+                        <h3 class="text-teal-600 text-sm font-bold mb-1">Total Liberaciones</h3>
+                        <p class="text-4xl font-extrabold text-teal-700 mb-1">{{ $totalLiberaciones }}</p>
                         <p class="text-xs text-teal-500">Todas mis liberaciones</p>
                     </div>
                 </div>
