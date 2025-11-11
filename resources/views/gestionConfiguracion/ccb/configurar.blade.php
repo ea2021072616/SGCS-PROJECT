@@ -80,6 +80,13 @@
                                 Selecciona los miembros que formarán parte del comité
                             </p>
                         </div>
+                        @if($proyecto->usuarios()->count() === 0)
+                            <div class="mb-4 p-4 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-yellow-800">
+                                Este proyecto no tiene usuarios asignados aún. Se incluye el líder/creador del
+                                proyecto como opción para que puedas crear el CCB; si quieres agregar más usuarios
+                                primero asígnalos al proyecto desde la sección de miembros del proyecto.
+                            </div>
+                        @endif
                         <div id="miembros-container" class="space-y-3 mb-6">
                             {{-- Se llenará dinámicamente --}}
                         </div>
@@ -136,9 +143,14 @@
     </div>
 
     <script>
-        const miembrosDisponibles = @json($usuariosProyecto);
-        const miembrosActuales = @json($ccb ? $ccb->miembros->pluck('id')->toArray() : []);
-        const rolesActuales = @json($ccb ? $ccb->miembros->mapWithKeys(fn($m) => [$m->id => $m->pivot->rol_en_ccb])->toArray() : []);
+    const miembrosDisponibles = @json($usuariosProyecto);
+    const miembrosActuales = @json($ccb ? $ccb->miembros->pluck('id')->toArray() : []);
+    const rolesActuales = @json($ccb ? $ccb->miembros->mapWithKeys(fn($m) => [$m->id => $m->pivot->rol_en_ccb])->toArray() : []);
+
+    // Roles disponibles cargados desde la tabla `roles` (incluye los
+    // creados por el seeder `CCBRolesSeeder` y cualquier rol creado
+    // manualmente). Se pasaron desde el controlador.
+    const rolesDisponibles = @json(isset($roles) ? $roles->pluck('nombre') : []);
         let contadorMiembros = 0;
 
         function agregarMiembro() {
@@ -169,11 +181,12 @@
                         Rol en CCB
                     </label>
                     <select name="roles_ccb[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm">
-                        <option value="Miembro">Miembro</option>
-                        <option value="Presidente">Presidente</option>
-                        <option value="Secretario">Secretario</option>
-                        <option value="Revisor Técnico">Revisor Técnico</option>
-                        <option value="Revisor de Calidad">Revisor de Calidad</option>
+                        ${(() => {
+                            // Asegurarnos de tener 'Miembro' como opción por defecto
+                            const opciones = Array.isArray(rolesDisponibles) ? rolesDisponibles.slice() : [];
+                            if (!opciones.includes('Miembro')) opciones.unshift('Miembro');
+                            return opciones.map(r => `\n                                <option value="${r}">${r}</option>`).join('');
+                        })()}
                     </select>
                 </div>
 
@@ -213,6 +226,15 @@
             @else
                 // Agregar un campo vacío inicial
                 agregarMiembro();
+                // Si solo hay un usuario disponible (p. ej. el creador), preseleccionarlo
+                if (miembrosDisponibles.length === 1) {
+                    const ultimoIndex = contadorMiembros - 1;
+                    const ultimoDiv = document.getElementById(`miembro-${ultimoIndex}`);
+                    const selectUsuario = ultimoDiv.querySelector('select[name="miembros[]"]');
+                    if (selectUsuario) {
+                        selectUsuario.value = miembrosDisponibles[0].id;
+                    }
+                }
             @endif
         });
     </script>

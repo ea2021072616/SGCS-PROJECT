@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             MetodologiasSeeder::class,     // 1. Metodologías (Scrum y Cascada) y sus Fases
             PlantillasECSeeder::class,     // 2. Plantillas de EC por metodología
             RolesSeeder::class,            // 3. Roles profesionales del SGCS
+            CCBRolesSeeder::class,         // 3b. Roles específicos para CCB (si faltan)
             UsuarioSeeder::class,          // 4. Usuarios profesionales para demo
             DemoCompletaSeeder::class,     // 5. DEMO COMPLETA: Proyectos, Equipos, ECs, Tareas y CCBs
         ]);

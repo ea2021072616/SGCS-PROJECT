@@ -25,6 +25,17 @@ class SolicitudCambio extends Model
         'resumen_impacto',
         'liberacion_objetivo_id',
         'origen_cambio',
+        // Campos de auditoría
+        'aprobado_por',
+        'aprobado_en',
+        'rechazado_por',
+        'rechazado_en',
+        'motivo_rechazo',
+    ];
+
+    protected $casts = [
+        'aprobado_en' => 'datetime',
+        'rechazado_en' => 'datetime',
     ];
 
     protected static function boot()
@@ -56,6 +67,16 @@ class SolicitudCambio extends Model
     public function items()
     {
         return $this->hasMany(ItemCambio::class, 'solicitud_cambio_id');
+    }
+
+    public function aprobador()
+    {
+        return $this->belongsTo(Usuario::class, 'aprobado_por');
+    }
+
+    public function rechazador()
+    {
+        return $this->belongsTo(Usuario::class, 'rechazado_por');
     }
 
     public function votos()

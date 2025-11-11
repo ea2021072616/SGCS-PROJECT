@@ -9,6 +9,7 @@ use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ComiteCambiosController extends Controller
 {
@@ -81,7 +82,33 @@ class ComiteCambiosController extends Controller
         // Obtener usuarios que tienen acceso al proyecto
         $usuariosProyecto = $proyecto->usuarios()->get();
 
-        return view('gestionConfiguracion.ccb.configurar', compact('proyecto', 'ccb', 'usuariosProyecto'));
+        // Obtener roles desde la tabla `roles` para mostrarlos dinámicamente
+        // en la vista. Preferimos mostrar únicamente los roles marcados como
+        // específicos para CCB (columna `es_para_ccb`) cuando exista esa
+        // columna; si no existe, hacemos fallback a todos los roles para
+        // mantener compatibilidad con instalaciones previas.
+        $rolesQuery = DB::table('roles')->select('id', 'nombre');
+
+        if (Schema::hasColumn('roles', 'es_para_ccb')) {
+            $rolesQuery->where('es_para_ccb', true);
+        }
+
+        $roles = $rolesQuery->orderBy('nombre')->get();
+
+        // Si no hay usuarios asignados todavía (proyecto nuevo), asegurarnos
+        // de incluir al creador/líder del proyecto como opción mínima para
+        // poder crear el CCB. También eliminamos duplicados por id.
+        if ($usuariosProyecto->isEmpty() && $proyecto->creador) {
+            $usuariosProyecto = collect([$proyecto->creador]);
+        } else {
+            // Asegurar que el creador siempre esté disponible en la lista
+            if ($proyecto->creador) {
+                $usuariosProyecto->push($proyecto->creador);
+                $usuariosProyecto = $usuariosProyecto->unique('id')->values();
+            }
+        }
+
+    return view('gestionConfiguracion.ccb.configurar', compact('proyecto', 'ccb', 'usuariosProyecto', 'roles'));
     }
 
     /**
@@ -183,11 +210,20 @@ class ComiteCambiosController extends Controller
             ];
         }
 
+        // Cargar roles desde la tabla `roles` para mostrarlos en la vista.
+        // Preferimos filtrar por `es_para_ccb` si la columna existe.
+        $rolesQuery = DB::table('roles')->select('nombre');
+        if (Schema::hasColumn('roles', 'es_para_ccb')) {
+            $rolesQuery->where('es_para_ccb', true);
+        }
+        $roles = $rolesQuery->orderBy('nombre')->get();
+
         return view('gestionConfiguracion.ccb.miembros', compact(
             'proyecto',
             'ccb',
             'miembros',
-            'estadisticasMiembros'
+            'estadisticasMiembros',
+            'roles'
         ));
     }
 

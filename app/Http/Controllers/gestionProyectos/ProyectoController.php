@@ -4,6 +4,7 @@ namespace App\Http\Controllers\GestionProyectos;
 
 use App\Http\Controllers\Controller;
 use App\Models\Proyecto;
+use App\Models\ComiteCambio;
 use App\Models\Equipo;
 use App\Models\Rol;
 use App\Models\Usuario;
@@ -592,12 +593,49 @@ class ProyectoController extends Controller
                 $rolLider = Rol::find(2); // Fallback al rol con id 2 si existe
             }
 
+            // Añadir el líder también como miembro del proyecto (usuarios_roles)
+            // para que aparezca en la vista de miembros que utiliza la relación usuarios() (usuarios_roles).
             if ($rolLider) {
+                // Insertar en usuarios_roles si no existe
+                $existeUsuarioRol = DB::table('usuarios_roles')
+                    ->where('proyecto_id', $proyecto->id)
+                    ->where('usuario_id', $liderId)
+                    ->exists();
+
+                if (!$existeUsuarioRol) {
+                    DB::table('usuarios_roles')->insert([
+                        'usuario_id' => $liderId,
+                        'proyecto_id' => $proyecto->id,
+                        'rol_id' => $rolLider->id,
+                    ]);
+                }
+
+                // Insertar en miembros_equipo (también)
                 DB::table('miembros_equipo')->insert([
                     'equipo_id' => $equipoId,
                     'usuario_id' => $liderId,
                     'rol_id' => $rolLider->id,
                 ]);
+            }
+
+            // 4️⃣ Crear automáticamente un CCB mínimo para el proyecto y asignar al líder como miembro
+            // solo si no existe ya un CCB para este proyecto.
+            $existingCcb = ComiteCambio::where('proyecto_id', $proyecto->id)->first();
+            if (!$existingCcb) {
+                $ccb = ComiteCambio::create([
+                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                    'proyecto_id' => $proyecto->id,
+                    'nombre' => 'CCB - ' . $proyecto->nombre,
+                    'quorum' => 1,
+                ]);
+
+                // Attach leader as Presidente/Líder del CCB
+                $ccb->miembros()->attach($liderId, [
+                    'rol_en_ccb' => 'Líder del Proyecto (Gestor de Configuración)'
+                ]);
+
+                // Recalculate quorum
+                $ccb->calcularQuorum();
             }
 
             // 4️⃣ Asignar miembros al equipo
@@ -607,11 +645,26 @@ class ProyectoController extends Controller
                     continue;
                 }
 
+                // Insertar en miembros_equipo
                 DB::table('miembros_equipo')->insert([
                     'equipo_id' => $equipoId,
                     'usuario_id' => $miembro['usuario_id'],
                     'rol_id' => $miembro['rol_id'],
                 ]);
+
+                // También asegurar que el usuario esté registrado en usuarios_roles (miembro del proyecto)
+                $existeUsuarioRol = DB::table('usuarios_roles')
+                    ->where('proyecto_id', $proyecto->id)
+                    ->where('usuario_id', $miembro['usuario_id'])
+                    ->exists();
+
+                if (!$existeUsuarioRol) {
+                    DB::table('usuarios_roles')->insert([
+                        'usuario_id' => $miembro['usuario_id'],
+                        'proyecto_id' => $proyecto->id,
+                        'rol_id' => $miembro['rol_id'],
+                    ]);
+                }
             }
 
             // 5️⃣ Crear EC desde plantillas seleccionadas
@@ -728,7 +781,9 @@ class ProyectoController extends Controller
     private function generarCodigoEC($proyecto)
     {
         $año = date('Y');
-        $ultimoEC = \App\Models\ElementoConfiguracion::where('proyecto_id', $proyecto->id)
+        // Buscar el último código EC del año en toda la tabla (único globalmente)
+        // porque la columna `codigo_ec` tiene un índice UNIQUE a nivel global.
+        $ultimoEC = \App\Models\ElementoConfiguracion::where('codigo_ec', 'like', "EC-{$año}-%")
             ->orderBy('codigo_ec', 'desc')
             ->first();
 
@@ -739,7 +794,18 @@ class ProyectoController extends Controller
             $contador = isset($matches[1]) ? ((int)$matches[1] + 1) : 1;
         }
 
-        return sprintf("EC-%s-%03d", $año, $contador);
+        // Asegurar unicidad en caso extremo de condiciones de carrera: si el código ya
+        // existe (por ejemplo otro proceso creó el mismo código entre la consulta y la inserción),
+        // incrementar hasta encontrar uno libre.
+        do {
+            $candidate = sprintf("EC-%s-%03d", $año, $contador);
+            $exists = \App\Models\ElementoConfiguracion::where('codigo_ec', $candidate)->exists();
+            if ($exists) {
+                $contador++;
+            }
+        } while ($exists);
+
+        return $candidate;
     }
 
     /**
@@ -914,11 +980,26 @@ class ProyectoController extends Controller
             // Agregar miembros si se proporcionaron
             if (!empty($validated['miembros'])) {
                 foreach ($validated['miembros'] as $miembro) {
+                    // Insertar en miembros_equipo
                     DB::table('miembros_equipo')->insert([
                         'equipo_id' => $equipo->id,
                         'usuario_id' => $miembro['usuario_id'],
                         'rol_id' => $miembro['rol_id'],
                     ]);
+
+                    // Asegurar que el usuario también esté en usuarios_roles (miembro del proyecto)
+                    $existeUsuarioRol = DB::table('usuarios_roles')
+                        ->where('proyecto_id', $proyecto->id)
+                        ->where('usuario_id', $miembro['usuario_id'])
+                        ->exists();
+
+                    if (!$existeUsuarioRol) {
+                        DB::table('usuarios_roles')->insert([
+                            'usuario_id' => $miembro['usuario_id'],
+                            'proyecto_id' => $proyecto->id,
+                            'rol_id' => $miembro['rol_id'],
+                        ]);
+                    }
                 }
             }
 

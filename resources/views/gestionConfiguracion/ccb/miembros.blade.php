@@ -83,12 +83,16 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Rol en CCB
                             </label>
+                            @php
+                                $roleNames = isset($roles) ? $roles->pluck('nombre')->toArray() : [];
+                            @endphp
                             <select name="rol_en_ccb" class="select select-bordered w-full">
-                                <option value="Miembro">Miembro</option>
-                                <option value="Presidente">Presidente</option>
-                                <option value="Secretario">Secretario</option>
-                                <option value="Revisor Técnico">Revisor Técnico</option>
-                                <option value="Revisor de Calidad">Revisor de Calidad</option>
+                                @if(!in_array('Miembro', $roleNames))
+                                    <option value="Miembro">Miembro</option>
+                                @endif
+                                @foreach($roleNames as $r)
+                                    <option value="{{ $r }}">{{ $r }}</option>
+                                @endforeach
                             </select>
                         </div>
 
@@ -148,12 +152,17 @@
                                                 <form action="{{ route('proyectos.ccb.miembros.actualizar-rol', [$proyecto, $miembro->id]) }}" method="POST" class="inline">
                                                     @csrf
                                                     @method('PUT')
+                                                    @php
+                                                        $roleNames = isset($roles) ? $roles->pluck('nombre')->toArray() : [];
+                                                    @endphp
                                                     <select name="rol_en_ccb" onchange="this.form.submit()" class="select select-bordered select-sm">
-                                                        <option value="Miembro" {{ $miembro->pivot->rol_en_ccb === 'Miembro' ? 'selected' : '' }}>Miembro</option>
-                                                        <option value="Presidente" {{ $miembro->pivot->rol_en_ccb === 'Presidente' ? 'selected' : '' }}>Presidente</option>
-                                                        <option value="Secretario" {{ $miembro->pivot->rol_en_ccb === 'Secretario' ? 'selected' : '' }}>Secretario</option>
-                                                        <option value="Revisor Técnico" {{ $miembro->pivot->rol_en_ccb === 'Revisor Técnico' ? 'selected' : '' }}>Revisor Técnico</option>
-                                                        <option value="Revisor de Calidad" {{ $miembro->pivot->rol_en_ccb === 'Revisor de Calidad' ? 'selected' : '' }}>Revisor de Calidad</option>
+                                                        {{-- Si el rol actual no está en la lista de roles, mostrarlo primero para no perderlo --}}
+                                                        @if(!in_array($miembro->pivot->rol_en_ccb, $roleNames))
+                                                            <option value="{{ $miembro->pivot->rol_en_ccb }}" selected>{{ $miembro->pivot->rol_en_ccb }}</option>
+                                                        @endif
+                                                        @foreach($roleNames as $r)
+                                                            <option value="{{ $r }}" {{ $miembro->pivot->rol_en_ccb === $r ? 'selected' : '' }}>{{ $r }}</option>
+                                                        @endforeach
                                                     </select>
                                                 </form>
                                             </td>

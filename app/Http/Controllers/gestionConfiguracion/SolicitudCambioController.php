@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Jobs\ImplementarSolicitudAprobadaJob;
 
 class SolicitudCambioController extends Controller
 {
@@ -329,12 +330,27 @@ class SolicitudCambioController extends Controller
 
             // Decisión: mayoría simple de aprobaciones sobre el quorum
             if ($votosAprobar >= $ccb->quorum) {
-                $solicitud->estado = 'APROBADA';
-                $solicitud->save();
+                // APROBADA - Registrar auditoría
+                $solicitud->update([
+                    'estado' => 'APROBADA',
+                    'aprobado_por' => Auth::id(),
+                    'aprobado_en' => now(),
+                ]);
+                
+                // 🚀 NUEVA FUNCIONALIDAD: Encolar implementación automática
+                ImplementarSolicitudAprobadaJob::dispatch($solicitud);
+                
                 // TODO: Notificar aprobación
+                
             } elseif ($votosRechazar >= $ccb->quorum) {
-                $solicitud->estado = 'RECHAZADA';
-                $solicitud->save();
+                // RECHAZADA - Registrar auditoría
+                $solicitud->update([
+                    'estado' => 'RECHAZADA',
+                    'rechazado_por' => Auth::id(),
+                    'rechazado_en' => now(),
+                    'motivo_rechazo' => 'Rechazada por mayoría del CCB',
+                ]);
+                
                 // TODO: Notificar rechazo
             }
         }
