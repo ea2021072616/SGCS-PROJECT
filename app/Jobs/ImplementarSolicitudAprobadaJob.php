@@ -33,7 +33,7 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
     public function handle(): void
     {
         DB::beginTransaction();
-        
+
         try {
             Log::info("🔧 Iniciando implementación automática de solicitud: {$this->solicitudCambio->titulo}");
 
@@ -107,7 +107,7 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
     {
         $proyecto = $this->solicitudCambio->proyecto;
         $metodologia = $proyecto->metodologia;
-        
+
         Log::info("🎯 Creando tareas para metodología: {$metodologia->nombre}");
 
         if ($metodologia->nombre === 'Scrum') {
@@ -122,21 +122,28 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
      */
     private function crearTareasScrum($proyecto)
     {
+        Log::info("🔍 Buscando fase 'Product Backlog' para proyecto {$proyecto->nombre} (Metodología ID: {$proyecto->id_metodologia})");
+
         // Para Scrum: crear en Product Backlog
         $faseBacklog = FaseMetodologia::where('id_metodologia', $proyecto->id_metodologia)
             ->where('nombre_fase', 'Product Backlog')
             ->first();
 
         if (!$faseBacklog) {
-            Log::warning("⚠️ No se encontró fase 'Product Backlog' para Scrum");
-            return;
+            Log::error("❌ No se encontró fase 'Product Backlog' para Scrum - ID Metodología: {$proyecto->id_metodologia}");
+            Log::error("Fases disponibles: " . FaseMetodologia::where('id_metodologia', $proyecto->id_metodologia)->pluck('nombre_fase')->implode(', '));
+            throw new \Exception("No se encontró la fase 'Product Backlog' para crear las tareas");
         }
+
+        Log::info("✅ Fase encontrada: {$faseBacklog->nombre_fase} (ID: {$faseBacklog->id_fase})");
 
         // Crear una historia de usuario por cada EC afectado
         foreach ($this->solicitudCambio->items as $item) {
             $ec = $item->elementoConfiguracion;
-            
-            TareaProyecto::create([
+
+            Log::info("📝 Creando tarea Scrum para EC: {$ec->codigo_ec} - {$ec->titulo}");
+
+            $tarea = TareaProyecto::create([
                 'id_proyecto' => $proyecto->id,
                 'id_fase' => $faseBacklog->id_fase,
                 'id_ec' => $ec->id,
@@ -154,7 +161,7 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
                 'creado_por' => $this->solicitudCambio->aprobado_por,
             ]);
 
-            Log::info("📝 Tarea Scrum creada para EC: {$ec->codigo_ec}");
+            Log::info("✅ Tarea Scrum #{$tarea->id_tarea} creada exitosamente para EC: {$ec->codigo_ec}");
         }
     }
 
@@ -163,21 +170,28 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
      */
     private function crearTareasCascada($proyecto)
     {
+        Log::info("🔍 Buscando fase 'Implementación' para proyecto {$proyecto->nombre} (Metodología ID: {$proyecto->id_metodologia})");
+
         // Para Cascada: crear en fase Implementación
         $faseImplementacion = FaseMetodologia::where('id_metodologia', $proyecto->id_metodologia)
             ->where('nombre_fase', 'Implementación')
             ->first();
 
         if (!$faseImplementacion) {
-            Log::warning("⚠️ No se encontró fase 'Implementación' para Cascada");
-            return;
+            Log::error("❌ No se encontró fase 'Implementación' para Cascada - ID Metodología: {$proyecto->id_metodologia}");
+            Log::error("Fases disponibles: " . FaseMetodologia::where('id_metodologia', $proyecto->id_metodologia)->pluck('nombre_fase')->implode(', '));
+            throw new \Exception("No se encontró la fase 'Implementación' para crear las tareas");
         }
+
+        Log::info("✅ Fase encontrada: {$faseImplementacion->nombre_fase} (ID: {$faseImplementacion->id_fase})");
 
         // Crear una tarea por cada EC afectado
         foreach ($this->solicitudCambio->items as $item) {
             $ec = $item->elementoConfiguracion;
-            
-            TareaProyecto::create([
+
+            Log::info("📝 Creando tarea Cascada para EC: {$ec->codigo_ec} - {$ec->titulo}");
+
+            $tarea = TareaProyecto::create([
                 'id_proyecto' => $proyecto->id,
                 'id_fase' => $faseImplementacion->id_fase,
                 'id_ec' => $ec->id,
@@ -193,7 +207,7 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
                 'creado_por' => $this->solicitudCambio->aprobado_por,
             ]);
 
-            Log::info("📝 Tarea Cascada creada para EC: {$ec->codigo_ec}");
+            Log::info("✅ Tarea Cascada #{$tarea->id_tarea} creada exitosamente para EC: {$ec->codigo_ec}");
         }
     }
 
@@ -273,30 +287,30 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
     private function analizarImpactoCronograma()
     {
         $proyecto = $this->solicitudCambio->proyecto;
-        
+
         try {
             $cronogramaService = new CronogramaInteligenteService();
-            
+
             Log::info("📊 Analizando impacto en cronograma del proyecto: {$proyecto->nombre}");
-            
+
             // Analizar cronograma después de agregar nuevas tareas
             $analisis = $cronogramaService->analizarCronograma($proyecto);
-            
+
             // Si hay problemas detectados, proponer ajuste automático
             if (!empty($analisis['desviaciones']) || !empty($analisis['sobrecarga']) || $analisis['salud'] < 70) {
-                
+
                 Log::warning("⚠️ Problemas detectados en cronograma. Salud: {$analisis['salud']}%");
-                
+
                 // Proponer ajuste automático
                 $ajuste = $cronogramaService->proponerAjuste($proyecto, [
                     'motivo' => "Nuevas tareas por solicitud de cambio: {$this->solicitudCambio->titulo}",
                     'nivel_urgencia' => $this->solicitudCambio->prioridad,
                     'auto_aprobar' => $this->solicitudCambio->prioridad === 'CRITICA', // Auto-aprobar si es crítico
                 ]);
-                
+
                 if ($ajuste) {
                     Log::info("🔄 Ajuste de cronograma propuesto: {$ajuste->id}");
-                    
+
                     // Si es crítico, aplicar automáticamente
                     if ($this->solicitudCambio->prioridad === 'CRITICA') {
                         $aprobado = $cronogramaService->aprobarAjuste($ajuste, $this->solicitudCambio->aprobado_por);
@@ -308,11 +322,11 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
                         Log::info("📋 Ajuste propuesto. Requiere aprobación manual.");
                     }
                 }
-                
+
             } else {
                 Log::info("✅ No se detectaron problemas significativos en el cronograma");
             }
-            
+
         } catch (\Exception $e) {
             // No fallar todo el job por problemas de cronograma
             Log::warning("⚠️ Error al analizar cronograma: " . $e->getMessage());

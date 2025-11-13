@@ -125,6 +125,22 @@ class Proyecto extends Model
     }
 
     /**
+     * Relación: Un proyecto tiene un comité de cambios.
+     */
+    public function comiteCambio()
+    {
+        return $this->hasOne(ComiteCambio::class, 'proyecto_id', 'id');
+    }
+
+    /**
+     * Relación: Un proyecto tiene muchas solicitudes de cambio.
+     */
+    public function solicitudesCambio(): HasMany
+    {
+        return $this->hasMany(SolicitudCambio::class, 'proyecto_id', 'id');
+    }
+
+    /**
      * Relación: Un proyecto pertenece a un usuario creador.
      */
     public function creador()
