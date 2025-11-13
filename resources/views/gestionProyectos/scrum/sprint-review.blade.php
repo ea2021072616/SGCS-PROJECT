@@ -1,35 +1,53 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-    <!-- Navegación Scrum -->
-    <x-scrum.navigation :proyecto="$proyecto" active="review" />
-
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-blue-100 rounded-lg">
-                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Sprint Review</h1>
-                    <p class="text-gray-600 mt-1">Revisión de incremento y demo del {{ $sprintActual }}</p>
-                </div>
-            </div>
-            <div class="text-right">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    {{ $sprintActual }}
-                </span>
-            </div>
+<x-app-layout>
+    <x-slot name="header">
+        <div>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                ✅ Sprint Review
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">
+                {{ $proyecto->nombre }} • {{ $sprintActual }}
+            </p>
         </div>
-    </div>
+    </x-slot>
 
-    <!-- Métricas del Sprint -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="py-6">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+
+            <!-- Navegación Scrum -->
+            <x-scrum.navigation :proyecto="$proyecto" active="review" />
+
+            <!-- Selector de Sprint -->
+            @if($sprintActivo)
+            <div class="bg-white rounded-lg shadow-sm border mb-6 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <label class="text-sm font-medium text-gray-700">Ver Sprint:</label>
+                        <select onchange="window.location.href='{{ route('scrum.sprint-review', $proyecto) }}?sprint=' + this.value" class="select select-bordered select-sm bg-white text-gray-900">
+                            @foreach($proyecto->sprints as $sprint)
+                                <option value="{{ $sprint->nombre }}" {{ $sprint->nombre === $sprintActual ? 'selected' : '' }}>
+                                    {{ $sprint->nombre }}
+                                    @if($sprint->estado === 'activo') 🔥 ACTIVO
+                                    @elseif($sprint->estado === 'completado') ✅ Completado
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @if($sprintActivo && $sprintActivo->estado === 'activo')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            🔥 Sprint Activo
+                        </span>
+                    @elseif($sprintActivo && $sprintActivo->estado === 'completado')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            ✅ Sprint Completado
+                        </span>
+                    @endif
+                </div>
+            </div>
+            @endif
+
+            <!-- Métricas del Sprint -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between">
                 <div>
@@ -63,6 +81,7 @@
                 <div>
                     <p class="text-sm font-medium text-gray-600">Story Points</p>
                     <p class="text-3xl font-bold text-gray-900 mt-2">{{ $totalStoryPoints }}</p>
+                    <p class="text-xs text-gray-500 mt-1">Completados: {{ $storyPointsCompletados ?? 0 }}</p>
                 </div>
                 <div class="p-3 bg-purple-100 rounded-lg">
                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,6 +100,21 @@
                 <div class="p-3 bg-blue-100 rounded-lg">
                     <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Velocidad</p>
+                    <p class="text-3xl font-bold text-indigo-600 mt-2">{{ $storyPointsCompletados ?? 0 }}</p>
+                    <p class="text-xs text-gray-500 mt-1">SP/Sprint</p>
+                </div>
+                <div class="p-3 bg-indigo-100 rounded-lg">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
                 </div>
             </div>
@@ -174,16 +208,23 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @php
+                                    // Mapear estados a colores
+                                    $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
+                                    $estadoNormalizado = in_array($tarea->estado, $estadosCompletados) ? 'Completado' : $tarea->estado;
+
                                     $estadoClasses = [
                                         'Pendiente' => 'bg-gray-100 text-gray-800',
+                                        'To Do' => 'bg-gray-100 text-gray-800',
                                         'En Progreso' => 'bg-blue-100 text-blue-800',
+                                        'In Progress' => 'bg-blue-100 text-blue-800',
                                         'En Revisión' => 'bg-yellow-100 text-yellow-800',
+                                        'In Review' => 'bg-yellow-100 text-yellow-800',
                                         'Completado' => 'bg-green-100 text-green-800',
                                         'Bloqueado' => 'bg-red-100 text-red-800',
                                     ];
                                 @endphp
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $estadoClasses[$tarea->estado] ?? 'bg-gray-100 text-gray-800' }}">
-                                    {{ $tarea->estado }}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $estadoClasses[$estadoNormalizado] ?? 'bg-gray-100 text-gray-800' }}">
+                                    {{ $estadoNormalizado }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -206,11 +247,34 @@
                                 {{ $tarea->responsableUsuario->nombre_completo ?? 'Sin asignar' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
+                                @php
+                                    // Calcular progreso según el estado
+                                    $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
+                                    $progreso = 0;
+
+                                    if (in_array($tarea->estado, $estadosCompletados)) {
+                                        $progreso = 100;
+                                    } else {
+                                        $mapeoProgreso = [
+                                            'To Do' => 0,
+                                            'Pendiente' => 0,
+                                            'Product Backlog' => 0,
+                                            'Sprint Planning' => 10,
+                                            'In Progress' => 50,
+                                            'En Progreso' => 50,
+                                            'In Review' => 75,
+                                            'En Revisión' => 75,
+                                            'Testing' => 80,
+                                            'Bloqueado' => 25,
+                                        ];
+                                        $progreso = $mapeoProgreso[$tarea->estado] ?? 0;
+                                    }
+                                @endphp
                                 <div class="flex items-center gap-2">
                                     <div class="flex-1 bg-gray-200 rounded-full h-2">
-                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $tarea->progreso ?? 0 }}%"></div>
+                                        <div class="@if($progreso >= 75) bg-green-600 @elseif($progreso >= 50) bg-blue-600 @elseif($progreso > 0) bg-yellow-600 @else bg-gray-400 @endif h-2 rounded-full" style="width: {{ $progreso }}%"></div>
                                     </div>
-                                    <span class="text-sm text-gray-600">{{ $tarea->progreso ?? 0 }}%</span>
+                                    <span class="text-sm text-gray-600 font-medium">{{ $progreso }}%</span>
                                 </div>
                             </td>
                         </tr>
@@ -221,10 +285,17 @@
 
             <!-- Resumen por Estado -->
             <div class="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4">
-                @foreach(['Pendiente', 'En Progreso', 'En Revisión', 'Completado', 'Bloqueado'] as $estado)
-                    @php
-                        $count = $tareasDelSprint->where('estado', $estado)->count();
-                    @endphp
+                @php
+                    $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
+                    $estadosAgrupados = [
+                        'Pendiente' => $tareasDelSprint->whereIn('estado', ['Pendiente', 'To Do'])->count(),
+                        'En Progreso' => $tareasDelSprint->whereIn('estado', ['En Progreso', 'In Progress'])->count(),
+                        'En Revisión' => $tareasDelSprint->whereIn('estado', ['En Revisión', 'In Review'])->count(),
+                        'Completado' => $tareasDelSprint->whereIn('estado', $estadosCompletados)->count(),
+                        'Bloqueado' => $tareasDelSprint->where('estado', 'Bloqueado')->count(),
+                    ];
+                @endphp
+                @foreach($estadosAgrupados as $estado => $count)
                     <div class="text-center p-4 bg-gray-50 rounded-lg">
                         <p class="text-2xl font-bold text-gray-900">{{ $count }}</p>
                         <p class="text-sm text-gray-600 mt-1">{{ $estado }}</p>
@@ -250,5 +321,6 @@
             </svg>
         </a>
     </div>
-</div>
-@endsection
+        </div>
+    </div>
+</x-app-layout>

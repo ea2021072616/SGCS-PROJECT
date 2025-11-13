@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\gestionConfiguracion;
+namespace App\Http\Controllers\GestionConfiguracion;
 
 use App\Http\Controllers\Controller;
 use App\Models\ComiteCambio;
@@ -14,8 +14,13 @@ use App\Services\ImpactoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use App\Jobs\ImplementarSolicitudAprobadaJob;
+use App\Notifications\Cambios\NuevaSolicitudCambio;
+use App\Notifications\Cambios\SolicitudAprobada;
+use App\Notifications\Cambios\SolicitudRechazada;
 
 class SolicitudCambioController extends Controller
 {
@@ -107,6 +112,17 @@ class SolicitudCambioController extends Controller
             }
 
             DB::commit();
+
+            // 🔔 NOTIFICAR a todos los miembros del CCB
+            try {
+                $ccb = $proyecto->hasOne(ComiteCambio::class, 'proyecto_id')->first();
+                if ($ccb) {
+                    $miembrosCCB = $ccb->miembros;
+                    Notification::send($miembrosCCB, new NuevaSolicitudCambio($solicitud));
+                }
+            } catch (\Exception $e) {
+                Log::warning('Error al enviar notificaciones de solicitud: ' . $e->getMessage());
+            }
 
             return redirect()
                 ->route('proyectos.solicitudes.show', [$proyecto, $solicitud])
@@ -336,12 +352,22 @@ class SolicitudCambioController extends Controller
                     'aprobado_por' => Auth::id(),
                     'aprobado_en' => now(),
                 ]);
-                
+
                 // 🚀 NUEVA FUNCIONALIDAD: Encolar implementación automática
                 ImplementarSolicitudAprobadaJob::dispatch($solicitud);
-                
-                // TODO: Notificar aprobación
-                
+
+                // 🔔 Notificar aprobación
+                try {
+                    // Notificar al creador
+                    $solicitud->solicitante->notify(new SolicitudAprobada($solicitud));
+
+                    // Notificar a todos los miembros del CCB
+                    $miembrosCCB = $ccb->miembros;
+                    Notification::send($miembrosCCB, new SolicitudAprobada($solicitud));
+                } catch (\Exception $e) {
+                    Log::warning('Error al enviar notificaciones de aprobación: ' . $e->getMessage());
+                }
+
             } elseif ($votosRechazar >= $ccb->quorum) {
                 // RECHAZADA - Registrar auditoría
                 $solicitud->update([
@@ -350,8 +376,18 @@ class SolicitudCambioController extends Controller
                     'rechazado_en' => now(),
                     'motivo_rechazo' => 'Rechazada por mayoría del CCB',
                 ]);
-                
-                // TODO: Notificar rechazo
+
+                // 🔔 Notificar rechazo
+                try {
+                    // Notificar al creador
+                    $solicitud->solicitante->notify(new SolicitudRechazada($solicitud));
+
+                    // Notificar a todos los miembros del CCB
+                    $miembrosCCB = $ccb->miembros;
+                    Notification::send($miembrosCCB, new SolicitudRechazada($solicitud));
+                } catch (\Exception $e) {
+                    Log::warning('Error al enviar notificaciones de rechazo: ' . $e->getMessage());
+                }
             }
         }
     }
@@ -450,13 +486,13 @@ class SolicitudCambioController extends Controller
     private function verificarAccesoProyecto(Proyecto $proyecto)
     {
         $usuarioId = Auth::id();
-        
+
         // Es creador del proyecto
         $esCreador = $proyecto->creado_por === $usuarioId;
-        
+
         // Es miembro directo del proyecto (tabla usuarios_roles)
         $esMiembroDirecto = $proyecto->usuarios()->where('usuario_id', $usuarioId)->exists();
-        
+
         // Es miembro de algún equipo del proyecto
         $esMiembroEquipo = $proyecto->equipos()
             ->whereHas('miembros', function($query) use ($usuarioId) {

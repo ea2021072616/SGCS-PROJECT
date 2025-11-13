@@ -2,10 +2,10 @@
 
 <?php
 
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EstadisticasController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\GestionProyectos\ProyectoController;
 use App\Http\Controllers\GestionProyectos\ElementoConfiguracionController;
 use App\Http\Controllers\GestionProyectos\RelacionECController;
@@ -28,9 +28,17 @@ Route::get('/estadisticas', [EstadisticasController::class, 'index'])
     ->name('estadisticas');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile', [PerfilController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [PerfilController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [PerfilController::class, 'destroy'])->name('profile.destroy');
+
+    // Rutas de Notificaciones
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::post('/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllRead'])->name('mark-all-read');
+        Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('destroy');
+    });
 
     // Ruta global de Liberaciones (fuera de proyectos individuales)
     Route::get('/liberaciones', [\App\Http\Controllers\LiberacionesGlobalController::class, 'index'])->name('liberaciones.index');
@@ -102,6 +110,7 @@ Route::middleware('auth')->group(function () {
             Route::put('/{tarea}', [\App\Http\Controllers\GestionProyectos\TareaProyectoController::class, 'update'])->name('update');
             Route::delete('/{tarea}', [\App\Http\Controllers\GestionProyectos\TareaProyectoController::class, 'destroy'])->name('destroy');
             Route::post('/{tarea}/cambiar-fase', [\App\Http\Controllers\GestionProyectos\TareaProyectoController::class, 'cambiarFase'])->name('cambiar-fase');
+            Route::post('/{tarea}/actualizar-estado', [\App\Http\Controllers\GestionProyectos\TareaProyectoController::class, 'actualizarEstado'])->name('actualizarEstado');
         });
 
         // Ruta de trazabilidad general del proyecto

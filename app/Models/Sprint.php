@@ -168,6 +168,10 @@ class Sprint extends Model
 
     /**
      * Calcular burndown data para el sprint.
+     *
+     * NOTA: Esta versión calcula el burndown basándose en el estado actual
+     * de las tareas, ya que no tenemos un campo fecha_completado.
+     * Para un burndown histórico preciso, considera agregar auditoría de cambios.
      */
     public function getBurndownData()
     {
@@ -175,29 +179,32 @@ class Sprint extends Model
             return [];
         }
 
-        $totalStoryPoints = $this->userStories->sum('story_points');
+        $totalStoryPoints = $this->userStories->sum('story_points') ?? 0;
         $duracion = $this->duracion;
         $burndownData = [];
+
+        // Estados que consideramos "completados"
+        $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA'];
 
         for ($dia = 0; $dia <= $duracion; $dia++) {
             $fecha = $this->fecha_inicio->copy()->addDays($dia);
 
-            // Calcular story points restantes hasta esa fecha
+            // Calcular story points completados hasta hoy (snapshot actual)
+            // LIMITACIÓN: No tenemos historial de cuándo se completó cada tarea
             $storyPointsCompletados = $this->userStories
-                ->where('estado', 'Completado')
-                ->where('fecha_completado', '<=', $fecha->format('Y-m-d'))
-                ->sum('story_points');
+                ->whereIn('estado', $estadosCompletados)
+                ->sum('story_points') ?? 0;
 
-            $storyPointsRestantes = $totalStoryPoints - $storyPointsCompletados;
+            $storyPointsRestantes = max(0, $totalStoryPoints - $storyPointsCompletados);
 
-            // Línea ideal
-            $idealRestante = max(0, $totalStoryPoints - ($totalStoryPoints / $duracion * $dia));
+            // Línea ideal (decremento lineal)
+            $idealRestante = max(0, $totalStoryPoints - ($totalStoryPoints / max($duracion, 1) * $dia));
 
             $burndownData[] = [
                 'dia' => $dia,
                 'fecha' => $fecha->format('Y-m-d'),
-                'ideal' => $idealRestante,
-                'actual' => max(0, $storyPointsRestantes),
+                'ideal' => round($idealRestante, 2),
+                'actual' => $dia <= now()->diffInDays($this->fecha_inicio) ? $storyPointsRestantes : null,
             ];
         }
 

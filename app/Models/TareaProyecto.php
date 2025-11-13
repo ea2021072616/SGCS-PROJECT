@@ -70,6 +70,11 @@ class TareaProyecto extends Model
     ];
 
     /**
+     * Atributos que deben ser añadidos al modelo
+     */
+    protected $appends = ['progreso'];
+
+    /**
      * Relación con Proyecto
      */
     public function proyecto(): BelongsTo
@@ -150,10 +155,57 @@ class TareaProyecto extends Model
     }
 
     /**
-     * Verifica si la tarea está completada
+     * Verifica si la tarea está completada (case-insensitive)
      */
     public function estaCompletada(): bool
     {
-        return in_array($this->estado, ['COMPLETADA', 'Done', 'DONE']);
+        $estadoLower = strtolower(trim($this->estado ?? ''));
+        return in_array($estadoLower, [
+            'done', 'completado', 'completada',
+            'hecho', 'finished', 'finalizado', 'finalizada'
+        ]);
+    }
+
+    /**
+     * Calcular progreso automáticamente según el estado
+     * Accessor para obtener el progreso de la tarea (0-100%)
+     */
+    public function getProgresoAttribute($value = null)
+    {
+        // Si ya existe el campo progreso_real en BD, usarlo
+        if (!is_null($value)) {
+            return (int) $value;
+        }
+
+        $attrs = $this->getAttributes();
+        if (isset($attrs['progreso_real']) && !is_null($attrs['progreso_real'])) {
+            return (int) $attrs['progreso_real'];
+        }
+
+        // Calcular automáticamente según el estado (case-insensitive)
+        $estado = $this->getRawOriginal('estado') ?? $this->estado ?? 'To Do';
+        $estadoLower = strtolower(trim($estado));
+
+        // Estados completados
+        if (in_array($estadoLower, ['done', 'completado', 'completada', 'hecho', 'finished', 'finalizado', 'finalizada'])) {
+            return 100;
+        }
+
+        // Mapeo de progreso por estado (case-insensitive)
+        $mapeoProgreso = [
+            'to do' => 0,
+            'pendiente' => 0,
+            'product backlog' => 0,
+            'sprint planning' => 10,
+            'in progress' => 50,
+            'en progreso' => 50,
+            'in review' => 75,
+            'en revisión' => 75,
+            'en revision' => 75,
+            'testing' => 80,
+            'bloqueado' => 25, // Algo de trabajo hecho pero bloqueado
+        ];
+
+        return $mapeoProgreso[$estadoLower] ?? 0;
     }
 }

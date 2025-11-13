@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\gestionConfiguracion;
+namespace App\Http\Controllers\GestionConfiguracion;
 
 use App\Http\Controllers\Controller;
 use App\Models\ComiteCambio;

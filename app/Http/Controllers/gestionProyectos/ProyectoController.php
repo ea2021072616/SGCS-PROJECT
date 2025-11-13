@@ -12,10 +12,14 @@ use App\Models\Metodologia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use App\Models\Sprint;
 use Illuminate\Support\Facades\Schema;
+use App\Notifications\Proyecto\UsuarioAsignadoAProyecto;
+use App\Notifications\Proyecto\UsuarioAsignadoComoLider;
+use App\Notifications\Proyecto\MiembroAgregadoACCB;
 
 class ProyectoController extends Controller
 {
@@ -134,7 +138,9 @@ class ProyectoController extends Controller
                 }, 'lider']);
             },
             'creador',
-            'metodologia'
+            'metodologia',
+            'elementosConfiguracion',
+            'solicitudesCambio'
         ]);
 
         // Detectar el ROL del usuario en este proyecto
@@ -272,7 +278,15 @@ class ProyectoController extends Controller
                 foreach ($fases as $fase) {
                     $tareasDelaFase = $tareasPorFase->get($fase->id_fase, collect());
                     $totalTareas = $tareasDelaFase->count();
-                    $tareasCompletadas = $tareasDelaFase->where('estado', 'Completado')->count();
+
+                    // Contar tareas completadas con case-insensitive matching
+                    $tareasCompletadas = $tareasDelaFase->filter(function($tarea) {
+                        $estadoLower = strtolower(trim($tarea->estado ?? ''));
+                        return in_array($estadoLower, [
+                            'done', 'completado', 'completada',
+                            'hecho', 'finished', 'finalizado', 'finalizada'
+                        ]);
+                    })->count();
 
                     $progresoPorFase[$fase->id_fase] = [
                         'total' => $totalTareas,
@@ -756,6 +770,34 @@ class ProyectoController extends Controller
 
             // Limpiar sesión
             session()->forget(['proyecto_temp', 'plantillas_seleccionadas', 'miembros_temp', 'lider_id']);
+
+            // 🔔 ENVIAR NOTIFICACIONES
+            try {
+                // 1. Notificar al líder
+                $lider = Usuario::find($liderId);
+                if ($lider) {
+                    $lider->notify(new UsuarioAsignadoComoLider($proyecto));
+                }
+
+                // 2. Notificar a los miembros del equipo
+                foreach ($miembrosData as $miembro) {
+                    if ($miembro['usuario_id'] === $liderId) continue;
+
+                    $usuario = Usuario::find($miembro['usuario_id']);
+                    if ($usuario) {
+                        $rol = Rol::find($miembro['rol_id']);
+                        $usuario->notify(new UsuarioAsignadoAProyecto($proyecto, $rol->nombre ?? 'Miembro'));
+                    }
+                }
+
+                // 3. Notificar al líder sobre su rol en CCB
+                if ($lider) {
+                    $lider->notify(new MiembroAgregadoACCB($proyecto));
+                }
+            } catch (\Exception $e) {
+                // No interrumpir el proceso si falla el envío de notificaciones
+                Log::warning('Error al enviar notificaciones de proyecto: ' . $e->getMessage());
+            }
 
             DB::commit();
 

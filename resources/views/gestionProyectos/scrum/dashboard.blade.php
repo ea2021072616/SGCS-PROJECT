@@ -24,6 +24,72 @@
             <!-- Navegación Scrum -->
             <x-scrum.navigation :proyecto="$proyecto" active="dashboard" />
 
+            <!-- Guía rápida de flujo Scrum (mostrar si el sprint está vacío) -->
+            @if($tareas->isEmpty())
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-blue-900 mb-2">🎯 ¿Cómo funciona el Sprint en tu SGCS?</h3>
+                        <p class="text-blue-800 mb-4">Este sprint <strong>{{ $sprintActual }}</strong> aún no tiene User Stories asignadas. Aquí está el flujo completo:</p>
+
+                        <div class="grid md:grid-cols-4 gap-3">
+                            <div class="bg-white rounded-lg p-3 border-l-4 border-green-500">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-lg">1️⃣</span>
+                                    <span class="font-bold text-sm text-gray-900">Sprint Planning</span>
+                                </div>
+                                <p class="text-xs text-gray-600">Selecciona User Stories del Product Backlog y asígnalas a este sprint</p>
+                                <a href="{{ route('scrum.sprint-planning', $proyecto) }}" class="text-xs text-green-600 hover:text-green-800 font-medium mt-1 inline-block">
+                                    → Ir a Planning
+                                </a>
+                            </div>
+
+                            <div class="bg-white rounded-lg p-3 border-l-4 border-blue-500">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-lg">2️⃣</span>
+                                    <span class="font-bold text-sm text-gray-900">Sprint Board</span>
+                                </div>
+                                <p class="text-xs text-gray-600">Mueve las cards entre columnas (To Do → In Progress → Done) con drag & drop</p>
+                            </div>
+
+                            <div class="bg-white rounded-lg p-3 border-l-4 border-yellow-500">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-lg">3️⃣</span>
+                                    <span class="font-bold text-sm text-gray-900">Al Completar</span>
+                                </div>
+                                <p class="text-xs text-gray-600">Al mover a "Done", el sistema pedirá la URL del commit de GitHub y creará/actualizará el EC</p>
+                            </div>
+
+                            <div class="bg-white rounded-lg p-3 border-l-4 border-purple-500">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-lg">4️⃣</span>
+                                    <span class="font-bold text-sm text-gray-900">Review & Retro</span>
+                                </div>
+                                <p class="text-xs text-gray-600">Al terminar el sprint, realiza Sprint Review y Retrospective</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-center gap-3">
+                            <a href="{{ route('scrum.sprint-planning', $proyecto) }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Comenzar Sprint Planning
+                            </a>
+                            <span class="text-sm text-blue-700">← Primero debes asignar User Stories al sprint</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Métricas del Sprint Actual -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-4">
@@ -94,7 +160,17 @@
             <!-- Tablero Scrum Kanban -->
             <div class="bg-white rounded-lg shadow-sm border">
                 <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Sprint Board - {{ $sprintActual }}</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">📋 Sprint Board - {{ $sprintActual }}</h3>
+                        @if($tareas->isEmpty())
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-500">Este sprint no tiene user stories asignadas</span>
+                                <a href="{{ route('scrum.sprint-planning', $proyecto) }}" class="btn btn-sm bg-green-600 text-white hover:bg-green-700">
+                                    ➕ Ir a Sprint Planning
+                                </a>
+                            </div>
+                        @endif
+                    </div>
 
                     <div class="flex gap-4 overflow-x-auto pb-4" style="min-height: 60vh;">
                         @foreach($fases as $fase)
@@ -190,8 +266,11 @@
                                         </div>
                                     </div>
                                 @empty
-                                    <div class="text-center py-8 text-gray-500">
-                                        <p class="text-sm">No hay user stories en esta columna</p>
+                                    <div class="text-center py-8 text-gray-400">
+                                        <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <p class="text-xs">Sin user stories</p>
                                     </div>
                                 @endforelse
                             </div>
@@ -396,9 +475,9 @@
             const columnElement = dropZone.closest('.scrum-column');
             const faseNombre = columnElement.querySelector('h4')?.textContent.trim() || '';
 
-            // Verificar si la fase indica completado
-            const fasesCompletadas = ['Done', 'Completada', 'Completado', 'Finalizado', 'COMPLETADA', 'DONE'];
-            const esCompletada = fasesCompletadas.some(f => faseNombre.toLowerCase().includes(f.toLowerCase()));
+            // Verificar si la fase indica completado (normalizado)
+            const fasesCompletadas = ['done', 'completada', 'completado', 'finalizado', 'terminado', 'finished'];
+            const esCompletada = fasesCompletadas.some(f => faseNombre.toLowerCase().includes(f));
 
             if (esCompletada) {
                 // Mostrar modal para pedir commit
@@ -647,23 +726,29 @@
                 lineaIdeal.push(totalStoryPoints - (totalStoryPoints / duracionSprint * i));
             }
 
-            // Línea actual (simulada - en producción vendría del backend)
+            // Línea actual - Progreso real
             const lineaActual = [totalStoryPoints];
             const storyPointsRestantes = {{ $totalStoryPoints - $storyPointsCompletados }};
 
-            // Simular progreso hasta hoy
+            // Calcular días transcurridos desde el inicio del sprint
             @if($sprintActivo && $sprintActivo->fecha_inicio)
-                const diasTranscurridos = Math.min(duracionSprint, Math.floor((new Date() - new Date("{{ $sprintActivo->fecha_inicio->format('Y-m-d') }}")) / (1000 * 60 * 60 * 24)));
+                const fechaInicio = new Date("{{ $sprintActivo->fecha_inicio->format('Y-m-d') }}");
+                const fechaHoy = new Date();
+                const diasTranscurridos = Math.min(duracionSprint, Math.max(0, Math.floor((fechaHoy - fechaInicio) / (1000 * 60 * 60 * 24))));
             @else
                 const diasTranscurridos = 0;
             @endif
 
+            // Generar línea de progreso actual
             for (let i = 1; i <= duracionSprint; i++) {
                 if (i <= diasTranscurridos) {
-                    // Progreso real hasta hoy
-                    lineaActual.push(totalStoryPoints - (totalStoryPoints - storyPointsRestantes) * (i / diasTranscurridos));
+                    // Calcular progreso lineal hasta hoy
+                    const progresoPorDia = diasTranscurridos > 0 ? (totalStoryPoints - storyPointsRestantes) / diasTranscurridos : 0;
+                    const puntosQuemados = progresoPorDia * i;
+                    lineaActual.push(Math.max(0, totalStoryPoints - puntosQuemados));
                 } else {
-                    lineaActual.push(null); // Días futuros
+                    // Días futuros (sin datos)
+                    lineaActual.push(null);
                 }
             }
 

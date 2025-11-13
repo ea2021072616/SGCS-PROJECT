@@ -65,10 +65,16 @@
                                         <tr class="hover:bg-gray-50 transition">
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center gap-3">
-                                                    <div class="avatar placeholder">
-                                                        <div class="bg-gray-200 text-black rounded-lg w-10 h-10 flex items-center justify-center">
-                                                            <span class="text-xs font-bold">{{ strtoupper(substr($proyecto['codigo'] ?? $proyecto['nombre'], 0, 2)) }}</span>
-                                                        </div>
+                                                    @php
+                                                        // Preparar objeto proyecto para el partial avatar
+                                                        $proyectoObj = (object)[
+                                                            'codigo' => $proyecto['codigo'] ?? $proyecto['nombre'],
+                                                            'nombre' => $proyecto['nombre'],
+                                                            'metodologia' => (object)['nombre' => $proyecto['metodologia'] ?? 'Ninguna']
+                                                        ];
+                                                    @endphp
+                                                    <div style="transform: scale(0.625); transform-origin: left center;">
+                                                        @include('partials.avatar-proyecto', ['proyecto' => $proyectoObj])
                                                     </div>
                                                     <div>
                                                         <div class="font-semibold text-gray-900">{{ $proyecto['nombre'] }}</div>

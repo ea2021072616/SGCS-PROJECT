@@ -20,10 +20,10 @@ class DetectorDesviaciones
         $hoy = Carbon::now();
         $desviaciones = collect([]);
 
-        $tareas = $proyecto->tareas()->with(['fase', 'responsableUsuario'])->get();
+        $tareas = $proyecto->tareas()->with(['fase', 'sprint', 'responsableUsuario'])->get();
 
         foreach ($tareas as $tarea) {
-            // Saltar tareas completadas
+            // Saltar tareas completadas (usa método del modelo que es case-insensitive)
             if ($tarea->estaCompletada()) {
                 continue;
             }
@@ -73,10 +73,11 @@ class DetectorDesviaciones
 
     /**
      * Calcula la ruta crítica del proyecto usando CPM (Critical Path Method)
+     * Adaptado para Scrum (sprints) y Cascada (fases)
      */
     public function calcularRutaCritica(Proyecto $proyecto): array
     {
-        $tareas = $proyecto->tareas()->with(['fase'])->get();
+        $tareas = $proyecto->tareas()->with(['fase', 'sprint'])->get();
 
         if ($tareas->isEmpty()) {
             return [
@@ -195,6 +196,9 @@ class DetectorDesviaciones
 
         // Llenar sucesores
         foreach ($tareas as $tarea) {
+            // Validar que la tarea sea válida antes de acceder a sus propiedades
+            if (!$tarea || !isset($tarea->id_tarea)) continue;
+
             foreach ($tarea->dependencias ?? [] as $depId) {
                 if (isset($grafo[$depId])) {
                     $grafo[$depId]['sucesores'][] = $tarea->id_tarea;

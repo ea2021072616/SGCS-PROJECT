@@ -83,7 +83,15 @@ class CascadaController extends Controller
         foreach ($fases as $fase) {
             $tareasDelaFase = $tareasPorFase->get($fase->id_fase, collect());
             $totalTareas = $tareasDelaFase->count();
-            $tareasCompletadas = $tareasDelaFase->where('estado', 'Completado')->count();
+
+            // Contar tareas completadas usando case-insensitive matching
+            $tareasCompletadas = $tareasDelaFase->filter(function($tarea) {
+                $estadoLower = strtolower(trim($tarea->estado));
+                return in_array($estadoLower, [
+                    'done', 'completado', 'completada',
+                    'hecho', 'finished', 'finalizado', 'finalizada'
+                ]);
+            })->count();
 
             $progresoPorFase[$fase->id_fase] = [
                 'total' => $totalTareas,
@@ -119,6 +127,11 @@ class CascadaController extends Controller
         }
         $miembrosEquipo = $miembrosEquipo->unique('id');
 
+        // Obtener elementos de configuración del proyecto
+        $elementosConfiguracion = $proyecto->elementosConfiguracion()
+            ->orderBy('codigo_ec')
+            ->get();
+
         return view('gestionProyectos.cascada.dashboard', compact(
             'proyecto',
             'metodologia',
@@ -132,6 +145,7 @@ class CascadaController extends Controller
             'duracionTotal',
             'hitos',
             'miembrosEquipo',
+            'elementosConfiguracion',
             'vistaActiva'
         ));
     }
@@ -158,10 +172,24 @@ class CascadaController extends Controller
             ->get();
 
         // Calcular métricas de la fase
+        $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
         $totalTareas = $tareasDelaFase->count();
-        $tareasCompletadas = $tareasDelaFase->where('estado', 'Completado')->count();
+        $tareasCompletadas = $tareasDelaFase->whereIn('estado', $estadosCompletados)->count();
         $horasEstimadas = $tareasDelaFase->sum('horas_estimadas');
         $progreso = $totalTareas > 0 ? round(($tareasCompletadas / $totalTareas) * 100) : 0;
+
+        // Contar tareas en cada estado (case-insensitive)
+        $tareasEnProgreso = $tareasDelaFase->filter(function($tarea) {
+            return in_array(strtolower(trim($tarea->estado)), ['en progreso', 'en_progreso', 'in progress']);
+        })->count();
+
+        $tareasPendientes = $tareasDelaFase->filter(function($tarea) {
+            return in_array(strtolower(trim($tarea->estado)), ['pendiente', 'to do', 'todo', 'por hacer']);
+        })->count();
+
+        $tareasEnRevision = $tareasDelaFase->filter(function($tarea) {
+            return in_array(strtolower(trim($tarea->estado)), ['en revisión', 'en revision', 'in review', 'review']);
+        })->count();
 
         // Obtener fase anterior y siguiente
         $faseAnterior = FaseMetodologia::where('id_metodologia', $proyecto->metodologia->id_metodologia)
@@ -177,17 +205,26 @@ class CascadaController extends Controller
         // Entregables de la fase
         $entregables = $tareasDelaFase->where('id_ec', '!=', null);
 
+        $porcentajeCompletado = $progreso;
+        $tareasFase = $tareasDelaFase; // Alias para la vista
+
         return view('gestionProyectos.cascada.fase-detalle', compact(
             'proyecto',
             'fase',
             'tareasDelaFase',
+            'tareasFase',
             'totalTareas',
             'tareasCompletadas',
+            'tareasPendientes',
+            'tareasEnProgreso',
+            'tareasEnRevision',
             'horasEstimadas',
             'progreso',
             'faseAnterior',
             'faseSiguiente',
-            'entregables'
+            'entregables',
+            'estadosCompletados',
+            'porcentajeCompletado'
         ));
     }
 
@@ -238,7 +275,8 @@ class CascadaController extends Controller
                 $fechaInicioFase = $tareasDelaFase->min('fecha_inicio');
                 $fechaFinFase = $tareasDelaFase->max('fecha_fin');
                 $totalTareas = $tareasDelaFase->count();
-                $tareasCompletadas = $tareasDelaFase->where('estado', 'Completado')->count();
+                $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
+                $tareasCompletadas = $tareasDelaFase->whereIn('estado', $estadosCompletados)->count();
 
                 // Hito de inicio de fase
                 if ($fechaInicioFase) {

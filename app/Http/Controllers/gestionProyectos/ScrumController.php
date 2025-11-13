@@ -113,7 +113,15 @@ class ScrumController extends Controller
         if ($sprintActivo) {
             $tareasSprintActual = $tareas->where('id_sprint', $sprintActivo->id_sprint);
             $totalStoryPoints = $tareasSprintActual->sum('story_points');
-            $storyPointsCompletados = $tareasSprintActual->where('estado', 'Done')->sum('story_points');
+
+            // Contar story points completados con case-insensitive matching
+            $storyPointsCompletados = $tareasSprintActual->filter(function($tarea) {
+                $estadoLower = strtolower(trim($tarea->estado));
+                return in_array($estadoLower, [
+                    'done', 'completado', 'completada',
+                    'hecho', 'finished', 'finalizado', 'finalizada'
+                ]);
+            })->sum('story_points');
 
             // Actualizar velocidad estimada del sprint si cambió
             if ($sprintActivo->velocidad_estimada != $totalStoryPoints) {
@@ -272,14 +280,16 @@ class ScrumController extends Controller
             ->get();
 
         // Métricas del sprint
+        $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
         $totalTareas = $tareasDelSprint->count();
-        $tareasCompletadas = $tareasDelSprint->where('estado', 'Completado')->count();
-        $totalStoryPoints = $tareasDelSprint->sum('story_points');
-        $storyPointsCompletados = $tareasDelSprint->where('estado', 'Completado')->sum('story_points');
+        $tareasCompletadas = $tareasDelSprint->whereIn('estado', $estadosCompletados)->count();
+        $totalStoryPoints = $tareasDelSprint->sum('story_points') ?? 0;
+        $storyPointsCompletados = $tareasDelSprint->whereIn('estado', $estadosCompletados)->sum('story_points') ?? 0;
 
         return view('gestionProyectos.scrum.sprint-review', compact(
             'proyecto',
             'sprintActual',
+            'sprintActivo',
             'tareasDelSprint',
             'totalTareas',
             'tareasCompletadas',
@@ -312,7 +322,8 @@ class ScrumController extends Controller
 
         return view('gestionProyectos.scrum.sprint-retrospective', compact(
             'proyecto',
-            'sprintActual'
+            'sprintActual',
+            'sprintActivo'
         ));
     }
 
@@ -384,31 +395,9 @@ class ScrumController extends Controller
             'estado' => 'planificado',
         ]);
 
-        // Crear actividades básicas del sprint basadas en las fases de Scrum
-        $metodologia = $proyecto->metodologia;
-        $fases = FaseMetodologia::where('id_metodologia', $metodologia->id_metodologia)
-            ->orderBy('orden')
-            ->get();
-
-        foreach ($fases as $fase) {
-            // Crear actividad para cada fase
-            TareaProyecto::create([
-                'id_proyecto' => $proyecto->id,
-                'nombre' => "Actividad: {$fase->nombre_fase} - {$validated['nombre']}",
-                'descripcion' => "Actividad automática generada para la fase {$fase->nombre_fase} del {$validated['nombre']}",
-                'id_sprint' => $sprint->id_sprint,
-                'id_fase' => $fase->id_fase,
-                'story_points' => null,
-                'prioridad' => 5,
-                'responsable' => Auth::id(),
-                'estado' => 'To Do',
-                'creado_por' => Auth::id(),
-            ]);
-        }
-
         return response()->json([
             'success' => true,
-            'message' => 'Sprint creado exitosamente con actividades automáticas',
+            'message' => 'Sprint creado exitosamente',
             'sprint' => $sprint->load(['userStories']),
         ]);
     }
@@ -635,7 +624,14 @@ class ScrumController extends Controller
             ]);
         }
 
-        // Si es petición normal, redirigir
+        // Si es petición normal, redirigir a sprint planning si venimos de ahí
+        $referer = $request->headers->get('referer');
+        if ($referer && str_contains($referer, 'sprint-planning')) {
+            return redirect()->route('scrum.sprint-planning', $proyecto)
+                ->with('success', 'User Story creada y agregada al Product Backlog');
+        }
+
+        // Por defecto redirigir al dashboard
         return redirect()->route('scrum.dashboard', $proyecto)
             ->with('success', '✅ User Story creada exitosamente');
     }

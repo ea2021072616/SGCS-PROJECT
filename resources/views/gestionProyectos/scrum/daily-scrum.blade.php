@@ -70,8 +70,10 @@
                 @forelse($miembrosEquipo as $miembro)
                     @php
                         $tareasDelMiembro = $tareasDelSprint->get($miembro->id, collect());
-                        $tareasCompletadas = $tareasDelMiembro->where('estado', 'Completado')->count();
-                        $tareasEnProgreso = $tareasDelMiembro->where('estado', '!=', 'Completado')->count();
+                        // Estados completados: Done, Completado, Completada, DONE, COMPLETADA
+                        $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
+                        $tareasCompletadas = $tareasDelMiembro->whereIn('estado', $estadosCompletados)->count();
+                        $tareasEnProgreso = $tareasDelMiembro->whereNotIn('estado', $estadosCompletados)->count();
                     @endphp
 
                     <div class="bg-white rounded-lg shadow-sm border">
@@ -106,7 +108,7 @@
                                         ¿Qué hice ayer?
                                     </h4>
                                     <div class="space-y-2">
-                                        @forelse($tareasDelMiembro->where('estado', 'Completado') as $tarea)
+                                        @forelse($tareasDelMiembro->whereIn('estado', $estadosCompletados) as $tarea)
                                             <div class="bg-green-50 border border-green-200 rounded-lg p-3">
                                                 <p class="text-sm font-medium text-green-900">{{ $tarea->nombre }}</p>
                                                 @if($tarea->story_points)
@@ -130,7 +132,7 @@
                                         ¿Qué haré hoy?
                                     </h4>
                                     <div class="space-y-2">
-                                        @forelse($tareasDelMiembro->where('estado', '!=', 'Completado') as $tarea)
+                                        @forelse($tareasDelMiembro->whereNotIn('estado', $estadosCompletados) as $tarea)
                                             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                                                 <p class="text-sm font-medium text-blue-900">{{ $tarea->nombre }}</p>
                                                 <div class="flex items-center justify-between mt-1">

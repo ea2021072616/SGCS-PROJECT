@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\gestionProyectos;
+namespace App\Http\Controllers\GestionProyectos;
 
 use App\Http\Controllers\Controller;
 use App\Models\Proyecto;

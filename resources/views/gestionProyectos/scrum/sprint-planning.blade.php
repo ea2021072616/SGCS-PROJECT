@@ -16,6 +16,34 @@
             <!-- Navegación Scrum -->
             <x-scrum.navigation :proyecto="$proyecto" active="planning" />
 
+            <!-- Guía del Sprint Planning -->
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-5 mb-6">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-green-900 text-lg mb-2">📋 Cómo funciona el Sprint Planning</h3>
+                        <div class="grid md:grid-cols-3 gap-4 text-sm">
+                            <div class="bg-white rounded-lg p-3 border-l-4 border-green-500">
+                                <p class="font-semibold text-gray-900 mb-1">1️⃣ Selecciona User Stories</p>
+                                <p class="text-gray-600 text-xs">Del <strong>Product Backlog</strong> (izquierda), arrastra las stories que quieres trabajar en el sprint</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 border-l-4 border-blue-500">
+                                <p class="font-semibold text-gray-900 mb-1">2️⃣ Asigna al Sprint</p>
+                                <p class="text-gray-600 text-xs">Suelta las stories en la zona de <strong>Sprint Planning</strong> (derecha) o haz clic en "Agregar a Sprint"</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 border-l-4 border-purple-500">
+                                <p class="font-semibold text-gray-900 mb-1">3️⃣ Guarda e Inicia</p>
+                                <p class="text-gray-600 text-xs">Haz clic en <strong>"Guardar Planificación"</strong> y luego <strong>"Iniciar Sprint"</strong> para comenzar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 <!-- Product Backlog -->
@@ -27,6 +55,13 @@
                                 + Nueva User Story
                             </button>
                         </div>
+
+                        <!-- Debug Info -->
+                        @if(config('app.debug'))
+                        <div class="text-xs text-gray-500 mb-2 p-2 bg-gray-100 rounded">
+                            📊 Product Backlog: {{ $productBacklog->count() }} user stories
+                        </div>
+                        @endif
 
                         <div class="space-y-3" style="max-height: 600px; overflow-y: auto;">
                             @forelse($productBacklog as $userStory)
@@ -80,8 +115,19 @@
                             @empty
                                 <div class="text-center py-8 text-gray-500">
                                     <div class="text-4xl mb-2">📦</div>
-                                    <p>No hay user stories en el Product Backlog</p>
-                                    <button onclick="modalNuevaUserStory.showModal()" class="btn btn-sm bg-green-600 text-white hover:bg-green-700 mt-2">
+                                    <p class="font-medium">No hay user stories en el Product Backlog</p>
+                                    <p class="text-sm mt-2">Las user stories aparecen aquí cuando no están asignadas a ningún sprint</p>
+
+                                    @if(config('app.debug'))
+                                    <div class="mt-4 text-xs bg-yellow-50 border border-yellow-200 rounded p-3 text-left">
+                                        <p class="font-semibold text-yellow-800">🔍 Debug Info:</p>
+                                        <p class="text-yellow-700">Total tareas del proyecto: {{ \App\Models\TareaProyecto::where('id_proyecto', $proyecto->id)->count() }}</p>
+                                        <p class="text-yellow-700">Con id_sprint NULL: {{ \App\Models\TareaProyecto::where('id_proyecto', $proyecto->id)->whereNull('id_sprint')->count() }}</p>
+                                        <p class="text-yellow-700">Con story_points: {{ \App\Models\TareaProyecto::where('id_proyecto', $proyecto->id)->whereNotNull('story_points')->count() }}</p>
+                                    </div>
+                                    @endif
+
+                                    <button onclick="modalNuevaUserStory.showModal()" class="btn btn-sm bg-green-600 text-white hover:bg-green-700 mt-4">
                                         Crear primera User Story
                                     </button>
                                 </div>
@@ -176,13 +222,14 @@
                         </div>
 
                         <!-- Acciones del Sprint -->
-                        <div class="mt-6 flex gap-3">
-                            <button onclick="guardarPlanificacion()" class="btn btn-sm bg-green-600 text-white hover:bg-green-700 flex-1">
-                                💾 Guardar Planificación
+                        <div class="mt-6 space-y-2">
+                            <button onclick="guardarPlanificacion()" class="btn btn-sm bg-green-600 text-white hover:bg-green-700 w-full">
+                                💾 Guardar Planificación (solo guardar)
                             </button>
-                            <button onclick="iniciarSprintSeleccionado()" class="btn btn-sm bg-blue-600 text-white hover:bg-blue-700 flex-1">
-                                🚀 Iniciar Sprint
+                            <button onclick="iniciarSprintSeleccionado()" class="btn btn-sm bg-blue-600 text-white hover:bg-blue-700 w-full">
+                                🚀 Guardar e Iniciar Sprint
                             </button>
+                            <p class="text-xs text-gray-500 text-center">💡 El botón "Iniciar Sprint" guarda automáticamente</p>
                         </div>
                     </div>
                 </div>
@@ -190,8 +237,8 @@
 
             <!-- Botones de Acción -->
             <div class="mt-6 flex justify-end gap-4">
-                <button onclick="guardarPlanificacion()" class="btn btn-outline">Guardar como Borrador</button>
-                <button onclick="iniciarSprintSeleccionado()" class="btn bg-blue-600 text-white hover:bg-blue-700">Iniciar Sprint</button>
+                <button onclick="guardarPlanificacion()" class="btn btn-outline">💾 Guardar Planificación</button>
+                <button onclick="iniciarSprintSeleccionado()" class="btn bg-blue-600 text-white hover:bg-blue-700">🚀 Guardar e Iniciar Sprint</button>
             </div>
         </div>
     </div>
@@ -307,7 +354,7 @@
 
                 <!-- Campos ocultos -->
                 <input type="hidden" name="id_fase" value="{{ $metodologia->fases->first()->id_fase ?? '' }}">
-                <input type="hidden" name="id_sprint" value="">
+                <input type="hidden" name="estado" value="To Do">
 
                 <!-- Botones de acción -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
@@ -400,6 +447,9 @@
         let sprintPlanificado = [];
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 Sprint Planning cargado');
+            console.log('Product Backlog items:', document.querySelectorAll('.backlog-item').length);
+
             // Event listener para cambio de sprint
             const sprintSelector = document.getElementById('sprintSelector');
             sprintSelector.addEventListener('change', function() {
@@ -659,14 +709,41 @@
             const selectedOption = selector.options[selector.selectedIndex];
             const sprintNombre = selectedOption.text.split('✓')[0].trim();
 
-            if (confirm(`🚀 ¿Iniciar ${sprintNombre}?\n\n• ${sprintPlanificado.length} user stories\n• El sprint entrará en ACTIVO`)) {
-                fetch(`/proyectos/{{ $proyecto->id }}/scrum/sprints/${sprintId}/iniciar`, {
+            if (confirm(`🚀 ¿Iniciar ${sprintNombre}?\n\n• ${sprintPlanificado.length} user stories\n• Se guardarán las user stories y el sprint entrará en ACTIVO`)) {
+                // PRIMERO: Guardar las user stories en el sprint
+                showNotification('⏳ Guardando user stories...', 'info');
+
+                fetch(`/proyectos/{{ $proyecto->id }}/scrum/sprints/${sprintId}/asignar-user-stories`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_stories: sprintPlanificado
+                    })
+                })
+                .then(async res => {
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.message || `HTTP ${res.status}`);
                     }
+                    return data;
+                })
+                .then(data => {
+                    console.log('✅ User stories guardadas:', data);
+                    showNotification('✅ User stories guardadas', 'success');
+
+                    // SEGUNDO: Iniciar el sprint
+                    return fetch(`/proyectos/{{ $proyecto->id }}/scrum/sprints/${sprintId}/iniciar`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
                 })
                 .then(async res => {
                     const payload = await res.json().catch(() => null);
@@ -679,10 +756,10 @@
                 .then(data => {
                     const mensaje = data?.message || `${sprintNombre} iniciado correctamente`;
                     showNotification(mensaje, 'success');
-                    setTimeout(() => window.location.href = '/proyectos/{{ $proyecto->id }}/scrum/dashboard', 1000);
+                    setTimeout(() => window.location.href = '/proyectos/{{ $proyecto->id }}/scrum/dashboard', 1500);
                 })
                 .catch(err => {
-                    console.error('Error al iniciar sprint:', err);
+                    console.error('❌ Error al iniciar sprint:', err);
                     const mensaje = err?.message || 'Ocurrió un error inesperado al iniciar el sprint';
                     showNotification(mensaje, 'error');
                 });
@@ -722,6 +799,8 @@
 
         // Función para cargar user stories ya asignadas al sprint
         function cargarUserStoriesDelSprint(sprintId) {
+            console.log('🔍 Cargando user stories del sprint:', sprintId);
+
             fetch(`/proyectos/{{ $proyecto->id }}/scrum/sprints/${sprintId}/user-stories`, {
                 method: 'GET',
                 headers: {
@@ -730,14 +809,25 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success && data.user_stories.length > 0) {
+                console.log('✅ User stories recibidas:', data);
+
+                if (data.success && data.user_stories && data.user_stories.length > 0) {
                     mostrarUserStoriesEnSprint(data.user_stories);
+
+                    // Ocultar del product backlog las que ya están en el sprint
+                    data.user_stories.forEach(story => {
+                        const backlogItem = document.querySelector(`[data-story-id="${story.id_tarea}"]`);
+                        if (backlogItem && backlogItem.closest('.backlog-item')) {
+                            backlogItem.closest('.backlog-item').style.display = 'none';
+                        }
+                    });
                 } else {
+                    console.log('ℹ️ No hay user stories en este sprint');
                     limpiarSprintDropZone();
                 }
             })
             .catch(err => {
-                console.error('Error al cargar user stories del sprint:', err);
+                console.error('❌ Error al cargar user stories del sprint:', err);
                 limpiarSprintDropZone();
             });
         }

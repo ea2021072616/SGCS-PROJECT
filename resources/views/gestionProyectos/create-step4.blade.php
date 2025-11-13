@@ -274,10 +274,9 @@
                                     Confirmar y Crear Proyecto
                                 </button>
                             </form>
-
                             <a
                                 href="{{ route('proyectos.create-step3') }}"
-                                class="btn btn-outline w-full"
+                                class="btn btn-outline text-gray-700 bg-gray-50 border-2 border-gray-300 hover:text-blue-600 hover:border-blue-500 hover:bg-blue-100 w-full"
                             >
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>

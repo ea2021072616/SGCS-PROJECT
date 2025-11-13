@@ -109,8 +109,11 @@
 
 @if($dragEnabled)
 <script>
+let tareaEnMovimiento = null;
+let estadoDestino = null;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Hacer cards arrastrarables
+    // Hacer cards arrastrables
     document.querySelectorAll('.kanban-card').forEach(card => {
         card.addEventListener('dragstart', function(e) {
             e.dataTransfer.setData('text/plain', this.dataset.tareaId);
@@ -154,7 +157,7 @@ function actualizarFaseTarea(tareaId, nuevaFase) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
         body: JSON.stringify({
-            nueva_fase: nuevaFase
+            id_fase: nuevaFase
         })
     })
     .then(response => response.json())
@@ -162,8 +165,12 @@ function actualizarFaseTarea(tareaId, nuevaFase) {
         if (data.success) {
             // Recargar la página o actualizar dinámicamente
             location.reload();
+        } else if (data.requiere_commit) {
+            // Si requiere commit, mostrar alerta y recargar
+            alert('⚠️ Esta tarea requiere un enlace de commit para ser completada. Por favor edita la tarea y agrega el commit URL.');
+            location.reload();
         } else {
-            alert('Error al mover la tarea');
+            alert('Error: ' + (data.error || 'Error al mover la tarea'));
         }
     })
     .catch(error => {

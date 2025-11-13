@@ -1,34 +1,46 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-    <!-- Navegación Scrum -->
-    <x-scrum.navigation :proyecto="$proyecto" active="retrospective" />
-
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-purple-100 rounded-lg">
-                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Sprint Retrospective</h1>
-                    <p class="text-gray-600 mt-1">Reflexión y mejora continua del {{ $sprintActual }}</p>
-                </div>
-            </div>
-            <div class="text-right">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                    {{ $sprintActual }}
-                </span>
-            </div>
+<x-app-layout>
+    <x-slot name="header">
+        <div>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                💡 Sprint Retrospective
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">
+                {{ $proyecto->nombre }} • {{ $sprintActual }}
+            </p>
         </div>
-    </div>
+    </x-slot>
 
-    <!-- Guía de Sprint Retrospective -->
+    <div class="py-6">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+
+            <!-- Navegación Scrum -->
+            <x-scrum.navigation :proyecto="$proyecto" active="retrospective" />
+
+            <!-- Selector de Sprint -->
+            @if($sprintActivo)
+            <div class="bg-white rounded-lg shadow-sm border mb-6 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <label class="text-sm font-medium text-gray-700">Retrospectiva del Sprint:</label>
+                        <select onchange="window.location.href='{{ route('scrum.sprint-retrospective', $proyecto) }}?sprint=' + this.value" class="select select-bordered select-sm bg-white text-gray-900">
+                            @foreach($proyecto->sprints as $sprint)
+                                <option value="{{ $sprint->nombre }}" {{ $sprint->nombre === $sprintActual ? 'selected' : '' }}>
+                                    {{ $sprint->nombre }}
+                                    @if($sprint->estado === 'completado') ✅ Completado
+                                    @elseif($sprint->estado === 'activo') 🔥 Activo
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <span class="font-medium">Sprint:</span> {{ $sprintActual }}
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Guía de Sprint Retrospective -->
     <div class="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
         <h3 class="text-lg font-semibold text-purple-900 mb-4 flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +96,7 @@
                 </h3>
                 <p class="text-sm text-green-700 mb-4">¿Qué nuevas prácticas deberíamos adoptar?</p>
                 <div class="bg-white rounded p-3 min-h-[150px] border border-green-200">
-                    <textarea class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Realizar code reviews diarias, Documentar decisiones técnicas..."></textarea>
+                    <textarea id="comenzar_hacer" class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Realizar code reviews diarias, Documentar decisiones técnicas..."></textarea>
                 </div>
             </div>
 
@@ -98,7 +110,7 @@
                 </h3>
                 <p class="text-sm text-blue-700 mb-4">¿Qué está funcionando bien y deberíamos intensificar?</p>
                 <div class="bg-white rounded p-3 min-h-[150px] border border-blue-200">
-                    <textarea class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Pair programming, Testing automatizado, Retrospectivas..."></textarea>
+                    <textarea id="hacer_mas" class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Pair programming, Testing automatizado, Retrospectivas..."></textarea>
                 </div>
             </div>
 
@@ -112,7 +124,7 @@
                 </h3>
                 <p class="text-sm text-yellow-700 mb-4">¿Qué está funcionando bien y debemos mantener?</p>
                 <div class="bg-white rounded p-3 min-h-[150px] border border-yellow-200">
-                    <textarea class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Daily standups, Sprint planning detallado, Comunicación abierta..."></textarea>
+                    <textarea id="seguir_haciendo" class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Daily standups, Sprint planning detallado, Comunicación abierta..."></textarea>
                 </div>
             </div>
 
@@ -126,7 +138,7 @@
                 </h3>
                 <p class="text-sm text-orange-700 mb-4">¿Qué deberíamos reducir o minimizar?</p>
                 <div class="bg-white rounded p-3 min-h-[150px] border border-orange-200">
-                    <textarea class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Reuniones largas, Interrupciones durante el desarrollo, Multitasking..."></textarea>
+                    <textarea id="hacer_menos" class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Reuniones largas, Interrupciones durante el desarrollo, Multitasking..."></textarea>
                 </div>
             </div>
 
@@ -140,7 +152,7 @@
                 </h3>
                 <p class="text-sm text-red-700 mb-4">¿Qué prácticas no están funcionando y debemos eliminar?</p>
                 <div class="bg-white rounded p-3 min-h-[150px] border border-red-200">
-                    <textarea class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Commits sin revisión, Saltarse la Definition of Done, Estimaciones apresuradas..."></textarea>
+                    <textarea id="dejar_hacer" class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: Commits sin revisión, Saltarse la Definition of Done, Estimaciones apresuradas..."></textarea>
                 </div>
             </div>
 
@@ -154,7 +166,7 @@
                 </h3>
                 <p class="text-sm text-purple-700 mb-4">Acciones concretas para el próximo Sprint</p>
                 <div class="bg-white rounded p-3 min-h-[150px] border border-purple-200">
-                    <textarea class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: 1. Implementar sesiones de pair programming 2 veces/semana
+                    <textarea id="plan_accion" class="w-full h-full border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Ej: 1. Implementar sesiones de pair programming 2 veces/semana
 2. Crear template para documentación técnica
 3. Reducir daily standup a 10 minutos máximo..."></textarea>
                 </div>
@@ -197,5 +209,40 @@
             </svg>
         </a>
     </div>
-</div>
-@endsection
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        // Guardar y cargar notas de retrospective en localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            const proyecto = "{{ $proyecto->nombre }}";
+            const sprint = "{{ $sprintActual }}";
+            const storageKey = `retrospective_${proyecto}_${sprint}`;
+
+            const textareas = ['comenzar_hacer', 'hacer_mas', 'seguir_haciendo', 'hacer_menos', 'dejar_hacer', 'plan_accion'];
+
+            // Cargar datos guardados
+            const savedData = JSON.parse(localStorage.getItem(storageKey) || '{}');
+            textareas.forEach(id => {
+                const textarea = document.getElementById(id);
+                if (textarea && savedData[id]) {
+                    textarea.value = savedData[id];
+                }
+            });
+
+            // Guardar automáticamente al escribir
+            textareas.forEach(id => {
+                const textarea = document.getElementById(id);
+                if (textarea) {
+                    textarea.addEventListener('input', function() {
+                        const currentData = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                        currentData[id] = this.value;
+                        localStorage.setItem(storageKey, JSON.stringify(currentData));
+                    });
+                }
+            });
+        });
+    </script>
+    @endpush
+</x-app-layout>

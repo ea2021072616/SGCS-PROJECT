@@ -192,7 +192,7 @@
                         <button
                             type="button"
                             onclick="agregarMiembro()"
-                            class="btn btn-outline border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 w-full"
+                            class="btn bg-gray-50 text-gray-700 border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-100 w-full"
                         >
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>

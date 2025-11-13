@@ -1,21 +1,25 @@
 <x-app-layout>
-    <div class="py-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div class="py-8 bg-gray-50 min-h-screen">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <!-- Header -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <div class="p-8">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <h1 class="text-3xl font-bold text-gray-900 mb-2">
-                                📊 Estadísticas y Análisis
-                            </h1>
-                            <p class="text-gray-600">Métricas y progreso de todos tus proyectos</p>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-2xl font-bold text-gray-900">Estadísticas y Análisis</h1>
+                                <p class="text-sm text-gray-600 mt-1">Métricas y progreso de todos tus proyectos</p>
+                            </div>
                         </div>
                         <div class="text-right">
-                            <p class="text-sm text-gray-500">Última actualización</p>
-                            <p class="text-lg font-semibold text-gray-900">{{ now()->format('d/m/Y H:i') }}</p>
+                            <p class="text-xs text-gray-500 font-medium">Última actualización</p>
+                            <p class="text-sm font-semibold text-gray-900 mt-1">{{ now()->format('d/m/Y H:i') }}</p>
                         </div>
                     </div>
                 </div>
@@ -24,76 +28,85 @@
             <!-- Indicadores Principales -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <!-- Total Proyectos -->
-                <div class="bg-white rounded-xl shadow-sm border border-indigo-100 p-6 hover:shadow-md transition">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                             </svg>
                         </div>
                     </div>
-                    <h3 class="text-indigo-600 text-sm font-semibold mb-1">Total Proyectos</h3>
-                    <p class="text-4xl font-bold text-indigo-700">{{ $totalProyectos }}</p>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-1">Total Proyectos</h3>
+                    <p class="text-3xl font-bold text-gray-900">{{ $totalProyectos }}</p>
                     <div class="mt-3 flex gap-2">
-                        <span class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded">{{ $proyectosActivos }} activos</span>
-                        <span class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded">{{ $proyectosCompletados }} completos</span>
+                        <span class="text-xs px-2 py-1 bg-green-50 text-green-700 rounded font-medium">{{ $proyectosActivos }} activos</span>
+                        <span class="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded font-medium">{{ $proyectosCompletados }} completos</span>
                     </div>
                 </div>
 
                 <!-- Total Tareas -->
-                <div class="bg-white rounded-xl shadow-sm border border-purple-100 p-6 hover:shadow-md transition">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                             </svg>
                         </div>
                     </div>
-                    <h3 class="text-purple-600 text-sm font-semibold mb-1">Total Tareas</h3>
-                    <p class="text-4xl font-bold text-purple-700">{{ $totalTareas }}</p>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-1">Total Tareas</h3>
+                    <p class="text-3xl font-bold text-gray-900">{{ $totalTareas }}</p>
                     <div class="mt-3">
-                        <span class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded">{{ $tareasCompletadas }} completadas</span>
+                        <span class="text-xs px-2 py-1 bg-green-50 text-green-700 rounded font-medium">{{ $tareasCompletadas }} completadas</span>
                     </div>
                 </div>
 
                 <!-- Total Liberaciones -->
-                <div class="bg-white rounded-xl shadow-sm border border-teal-100 p-6 hover:shadow-md transition">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-500 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                             </svg>
                         </div>
                     </div>
-                    <h3 class="text-teal-600 text-sm font-semibold mb-1">Liberaciones</h3>
-                    <p class="text-4xl font-bold text-teal-700">{{ $totalLiberaciones }}</p>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-1">Liberaciones</h3>
+                    <p class="text-3xl font-bold text-gray-900">{{ $totalLiberaciones }}</p>
                 </div>
 
                 <!-- Ítems de Cambio -->
-                <div class="bg-white rounded-xl shadow-sm border border-pink-100 p-6 hover:shadow-md transition">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-pink-400 to-pink-500 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-10 h-10 bg-pink-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                             </svg>
                         </div>
                     </div>
-                    <h3 class="text-pink-600 text-sm font-semibold mb-1">Ítems de Cambio</h3>
-                    <p class="text-4xl font-bold text-pink-700">{{ $totalCambios }}</p>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-1">Ítems de Cambio</h3>
+                    <p class="text-3xl font-bold text-gray-900">{{ $totalCambios }}</p>
                     <div class="mt-3">
-                        <span class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded">{{ $cambiosAprobados }} aprobados</span>
+                        <span class="text-xs px-2 py-1 bg-green-50 text-green-700 rounded font-medium">{{ $cambiosAprobados }} aprobados</span>
                     </div>
                 </div>
             </div>
 
             <!-- Gráficas -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 <!-- Progreso de Proyectos -->
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                    <div class="bg-gradient-to-r from-indigo-400 to-purple-500 p-6">
-                        <h2 class="text-xl font-bold text-white">📈 Progreso de Proyectos</h2>
-                        <p class="text-sm text-indigo-50">Porcentaje de completitud de tareas</p>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="border-b border-gray-200 p-5 bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-gray-900">Progreso de Proyectos</h2>
+                                <p class="text-xs text-gray-600">Porcentaje de completitud de tareas</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="p-6">
                         <canvas id="progresoProyectosChart" height="300"></canvas>
@@ -101,10 +114,20 @@
                 </div>
 
                 <!-- Distribución de Tareas -->
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                    <div class="bg-gradient-to-r from-purple-400 to-pink-500 p-6">
-                        <h2 class="text-xl font-bold text-white">🎯 Distribución de Tareas</h2>
-                        <p class="text-sm text-purple-50">Por estado actual</p>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="border-b border-gray-200 p-5 bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-gray-900">Distribución de Tareas</h2>
+                                <p class="text-xs text-gray-600">Por estado actual</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="p-6">
                         <canvas id="distribucionTareasChart" height="300"></canvas>
@@ -112,10 +135,19 @@
                 </div>
 
                 <!-- Liberaciones por Mes -->
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                    <div class="bg-gradient-to-r from-teal-400 to-cyan-500 p-6">
-                        <h2 class="text-xl font-bold text-white">🚀 Liberaciones por Mes</h2>
-                        <p class="text-sm text-teal-50">Últimos 6 meses</p>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="border-b border-gray-200 p-5 bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-gray-900">Liberaciones por Mes</h2>
+                                <p class="text-xs text-gray-600">Últimos 6 meses</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="p-6">
                         <canvas id="liberacionesMesChart" height="300"></canvas>
@@ -123,10 +155,19 @@
                 </div>
 
                 <!-- Proyectos por Metodología -->
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                    <div class="bg-gradient-to-r from-pink-400 to-rose-500 p-6">
-                        <h2 class="text-xl font-bold text-white">📋 Proyectos por Metodología</h2>
-                        <p class="text-sm text-pink-50">Distribución</p>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="border-b border-gray-200 p-5 bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-gray-900">Proyectos por Metodología</h2>
+                                <p class="text-xs text-gray-600">Distribución</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="p-6">
                         <canvas id="metodologiasChart" height="300"></canvas>

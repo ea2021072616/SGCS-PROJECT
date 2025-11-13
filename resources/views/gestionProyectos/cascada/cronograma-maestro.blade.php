@@ -87,7 +87,10 @@
                                                 <div class="px-4 py-3 hover:bg-gray-50 transition-colors">
                                                     <div class="flex items-center justify-between">
                                                         <div class="flex items-center gap-3">
-                                                            @if($tarea->estado === 'Completado')
+                                                            @php
+                                                                $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
+                                                            @endphp
+                                                            @if(in_array($tarea->estado, $estadosCompletados))
                                                                 <div class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                                                                     <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
@@ -188,7 +191,10 @@
                         <p class="text-sm text-gray-600">Total Actividades</p>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-green-600">{{ $tareas->where('estado', 'Completado')->count() }}</div>
+                        @php
+                            $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
+                        @endphp
+                        <div class="text-2xl font-bold text-green-600">{{ $tareas->whereIn('estado', $estadosCompletados)->count() }}</div>
                         <p class="text-sm text-gray-600">Completadas</p>
                     </div>
                     <div class="text-center">
@@ -197,7 +203,8 @@
                     </div>
                     <div class="text-center">
                         @php
-                            $progresoTotal = $tareas->count() > 0 ? round(($tareas->where('estado', 'Completado')->count() / $tareas->count()) * 100) : 0;
+                            $estadosCompletados = ['Done', 'Completado', 'Completada', 'DONE', 'COMPLETADA', 'done', 'completado', 'completada'];
+                            $progresoTotal = $tareas->count() > 0 ? round(($tareas->whereIn('estado', $estadosCompletados)->count() / $tareas->count()) * 100) : 0;
                         @endphp
                         <div class="text-2xl font-bold text-yellow-600">{{ $progresoTotal }}%</div>
                         <p class="text-sm text-gray-600">Progreso</p>

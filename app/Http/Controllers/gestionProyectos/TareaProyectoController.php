@@ -273,17 +273,30 @@ class TareaProyectoController extends Controller
         // Determinar el nuevo estado
         if (isset($validated['estado'])) {
             // Mapear estados del frontend a estados de la BD
+            // Mantenemos los estados tal como llegan del frontend para evitar inconsistencias
             $estadosBD = [
-                'Por Hacer' => 'PENDIENTE',
-                'En Progreso' => 'EN_PROGRESO',
-                'Finalizado' => 'COMPLETADA',
-                'Completado' => 'COMPLETADA',
-                'Completada' => 'COMPLETADA',
-                'Done' => 'COMPLETADA',
+                'Por Hacer' => 'Pendiente',
+                'Pendiente' => 'Pendiente',
+                'To Do' => 'Pendiente',
+                'TODO' => 'Pendiente',
+                'En Progreso' => 'En Progreso',
+                'EN_PROGRESO' => 'En Progreso',
+                'In Progress' => 'En Progreso',
+                'En Revisión' => 'En Revisión',
+                'En Revision' => 'En Revisión',
+                'EN_REVISION' => 'En Revisión',
+                'In Review' => 'En Revisión',
+                'Review' => 'En Revisión',
+                'Finalizado' => 'Completada',
+                'Completado' => 'Completada',
+                'Completada' => 'Completada',
+                'Done' => 'Completada',
+                'DONE' => 'Completada',
+                'COMPLETADA' => 'Completada',
             ];
 
             $estadoFrontend = $validated['estado'];
-            $estadoNuevo = $estadosBD[$estadoFrontend] ?? strtoupper(str_replace(' ', '_', $estadoFrontend));
+            $estadoNuevo = $estadosBD[$estadoFrontend] ?? $estadoFrontend;
         } else {
             // Obtener el nombre de la nueva fase como estado
             $nuevaFase = FaseMetodologia::find($validated['id_fase'] ?? $tarea->id_fase);
@@ -412,15 +425,15 @@ class TareaProyectoController extends Controller
      */
     private function esEstadoCompletado($estado): bool
     {
-        // Estados genéricos de completado
-        $estadosGenericos = ['COMPLETADA', 'COMPLETADO', 'Completado', 'Finalizado', 'FINALIZADO'];
-
-        // Estados específicos por metodología
-        $estadosScrum = ['Done', 'DONE'];
-        $estadosCascada = ['Despliegue', 'DESPLIEGUE', 'Mantenimiento', 'MANTENIMIENTO'];
-
-        // Combinar todos los estados
-        $estadosCompletados = array_merge($estadosGenericos, $estadosScrum, $estadosCascada);
+        // Estados genéricos de completado (case-insensitive)
+        $estadosCompletados = [
+            'COMPLETADA', 'Completada', 'completada',
+            'COMPLETADO', 'Completado', 'completado',
+            'DONE', 'Done', 'done',
+            'FINALIZADO', 'Finalizado', 'finalizado',
+            'Despliegue', 'DESPLIEGUE', 'despliegue',
+            'Mantenimiento', 'MANTENIMIENTO', 'mantenimiento'
+        ];
 
         return in_array($estado, $estadosCompletados);
     }
@@ -495,14 +508,75 @@ class TareaProyectoController extends Controller
 
         $commit->save();
 
-        // NOTA: Las versiones solo se crean cuando el CCB aprueba el EC (estado APROBADO)
-        // Por ahora solo registramos el commit y cambiamos el EC a EN_REVISION
+        // CREAR VERSIÓN AUTOMÁTICAMENTE (como en Scrum)
+        // Obtener versión actual o crear la primera
+        $versionActual = $ec->versionActual;
+        $versionParts = explode('.', $versionActual?->version ?? '0.0.0');
+
+        if ($versionParts[0] === '0') {
+            // Primera versión
+            $nuevaVersion = '1.0.0';
+        } else {
+            // Incrementar versión minor
+            $versionParts[1] = (int)$versionParts[1] + 1;
+            $versionParts[2] = 0;
+            $nuevaVersion = implode('.', $versionParts);
+        }
+
+        // Crear nueva versión del EC
+        $version = new VersionEC();
+        $version->id = (string) Str::uuid();
+        $version->ec_id = $ec->id;
+        $version->version = $nuevaVersion;
+        $version->registro_cambios = "Tarea completada: {$tarea->nombre}\n\nCommit: {$commitUrl}";
+        $version->creado_por = Auth::id();
+        $version->aprobado_por = Auth::id();
+        $version->aprobado_en = now();
+        $version->save();
+
+        // Actualizar EC con nueva versión y estado APROBADO
+        $ec->version_actual_id = $version->id;
+        $ec->estado = 'APROBADO';
+        $ec->save();
 
         return [
             'success' => true,
-            'message' => "Tarea completada. EC '{$ec->codigo}' pasó a estado EN_REVISION. Esperando aprobación del CCB.",
+            'message' => "Tarea completada exitosamente. EC '{$ec->codigo_ec}' actualizado a versión {$nuevaVersion}.",
             'commit_id' => $commit->id,
             'ec_id' => $ec->id,
+            'version' => $nuevaVersion,
         ];
+    }
+
+    /**
+     * Actualiza el estado de una tarea (para Cascada Kanban)
+     */
+    public function actualizarEstado(Request $request, Proyecto $proyecto, TareaProyecto $tarea)
+    {
+        // Verificar que la tarea pertenece al proyecto
+        if ($tarea->id_proyecto !== $proyecto->id) {
+            return response()->json(['error' => 'Tarea no pertenece a este proyecto'], 404);
+        }
+
+        // Verificar permisos (creador del proyecto o responsable de la tarea)
+        $usuarioAutorizado = ($proyecto->creado_por === Auth::user()->id) ||
+                           ($tarea->responsable === Auth::user()->id);
+
+        if (!$usuarioAutorizado) {
+            return response()->json(['error' => 'No tienes permisos para modificar esta tarea'], 403);
+        }
+
+        $validated = $request->validate([
+            'estado' => 'required|string|max:50',
+        ]);
+
+        $tarea->estado = $validated['estado'];
+        $tarea->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado actualizado exitosamente',
+            'tarea' => $tarea,
+        ]);
     }
 }

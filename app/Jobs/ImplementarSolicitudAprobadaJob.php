@@ -147,17 +147,19 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
                 'id_proyecto' => $proyecto->id,
                 'id_fase' => $faseBacklog->id_fase,
                 'id_ec' => $ec->id,
+                'id_sprint' => null, // ✅ Explícitamente NULL - Se asignará durante Sprint Planning
                 'nombre' => "Implementar cambio: {$ec->titulo}",
                 'descripcion' => "Solicitud de cambio: {$this->solicitudCambio->titulo}\n\n{$item->nota}",
-                'estado' => 'Product Backlog',
+                'estado' => 'To Do', // ✅ CORREGIDO: Estado genérico, no nombre de fase
                 'prioridad' => $this->convertirPrioridadScrum($this->solicitudCambio->prioridad),
                 'story_points' => $this->estimarStoryPoints($this->solicitudCambio->prioridad),
                 'criterios_aceptacion' => [
                     "El cambio debe ser implementado según la descripción de la solicitud",
                     "El EC {$ec->codigo_ec} debe tener la nueva versión aplicada",
-                    "Debe pasar todas las pruebas de calidad"
+                    "Debe pasar todas las pruebas de calidad",
+                    "Debe vincularse el commit de GitHub con la URL correspondiente"
                 ],
-                'responsable' => $this->solicitudCambio->aprobado_por,
+                'responsable' => null, // ✅ Sin asignar inicialmente - Se asigna en Sprint Planning
                 'creado_por' => $this->solicitudCambio->aprobado_por,
             ]);
 
@@ -197,13 +199,13 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
                 'id_ec' => $ec->id,
                 'nombre' => "Implementar cambio: {$ec->titulo}",
                 'descripcion' => "Solicitud de cambio: {$this->solicitudCambio->titulo}\n\n{$item->nota}",
-                'estado' => 'Implementación',
+                'estado' => 'Pendiente', // ✅ CORREGIDO: Estado genérico para Cascada
                 'prioridad' => $this->convertirPrioridadCascada($this->solicitudCambio->prioridad),
                 'horas_estimadas' => $this->estimarHoras($this->solicitudCambio->prioridad),
                 'fecha_inicio' => now()->addDay(), // Comenzar mañana
                 'fecha_fin' => now()->addDays($this->calcularDuracionDias($this->solicitudCambio->prioridad)),
                 'entregable' => "EC {$ec->codigo_ec} actualizado con los cambios solicitados",
-                'responsable' => $this->solicitudCambio->aprobado_por,
+                'responsable' => null, // ✅ Sin asignar inicialmente
                 'creado_por' => $this->solicitudCambio->aprobado_por,
             ]);
 
@@ -301,8 +303,8 @@ class ImplementarSolicitudAprobadaJob implements ShouldQueue
 
                 Log::warning("⚠️ Problemas detectados en cronograma. Salud: {$analisis['salud']}%");
 
-                // Proponer ajuste automático
-                $ajuste = $cronogramaService->proponerAjuste($proyecto, [
+                // Generar ajuste automático
+                $ajuste = $cronogramaService->generarAjuste($proyecto, [
                     'motivo' => "Nuevas tareas por solicitud de cambio: {$this->solicitudCambio->titulo}",
                     'nivel_urgencia' => $this->solicitudCambio->prioridad,
                     'auto_aprobar' => $this->solicitudCambio->prioridad === 'CRITICA', // Auto-aprobar si es crítico

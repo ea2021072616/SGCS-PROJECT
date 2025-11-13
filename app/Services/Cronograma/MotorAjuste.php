@@ -457,7 +457,13 @@ class MotorAjuste
         $parejas = [];
 
         foreach ($tareas as $t1) {
+            // Validar que t1 sea un objeto válido con id_tarea
+            if (!$t1 || !isset($t1->id_tarea)) continue;
+
             foreach ($tareas as $t2) {
+                // Validar que t2 sea un objeto válido con id_tarea
+                if (!$t2 || !isset($t2->id_tarea)) continue;
+
                 if ($t1->id_tarea >= $t2->id_tarea) continue;
 
                 if ($this->sonParalelizables($t1, $t2)) {
@@ -471,8 +477,18 @@ class MotorAjuste
 
     private function sonParalelizables(TareaProyecto $t1, TareaProyecto $t2): bool
     {
-        // Misma fase o fases consecutivas
-        if ($t1->id_fase == $t2->id_fase) return true;
+        // Validar que ambas tareas sean objetos válidos
+        if (!$t1 || !$t2) return false;
+
+        // Para Scrum: deben estar en el mismo sprint
+        if (isset($t1->id_sprint) && isset($t2->id_sprint) && $t1->id_sprint && $t2->id_sprint) {
+            if ($t1->id_sprint !== $t2->id_sprint) return false;
+        }
+
+        // Para Cascada: misma fase o fases consecutivas
+        if (isset($t1->id_fase) && isset($t2->id_fase) && $t1->id_fase && $t2->id_fase) {
+            if ($t1->id_fase == $t2->id_fase) return true;
+        }
 
         // No tienen dependencias entre ellas
         return !$this->tieneDependencia($t1, $t2) && !$this->tieneDependencia($t2, $t1);
@@ -480,6 +496,11 @@ class MotorAjuste
 
     private function tieneDependencia(TareaProyecto $tarea, TareaProyecto $posibleDependencia): bool
     {
+        // Validar objetos antes de acceder a propiedades
+        if (!$tarea || !$posibleDependencia || !isset($posibleDependencia->id_tarea)) {
+            return false;
+        }
+
         $dependencias = $tarea->dependencias ?? [];
         return in_array($posibleDependencia->id_tarea, $dependencias);
     }
