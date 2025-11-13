@@ -1,30 +1,31 @@
-# Usa la imagen oficial de PHP 8.4 con Apache
+# Usa PHP con Apache
 FROM php:8.4-apache
 
-# Instalar dependencias del sistema y extensiones PHP necesarias para Laravel
+# Instala dependencias necesarias para Laravel
 RUN apt-get update && apt-get install -y \
-    git unzip zip libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libxml2-dev libzip-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql mbstring exif pcntl bcmath xml zip \
-    && a2enmod rewrite
+    zip unzip git curl libpng-dev libonig-dev libxml2-dev libzip-dev && \
+    docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Copiar todos los archivos del proyecto al contenedor
+# Copia el proyecto al contenedor
 COPY . /var/www/html
 
-# Establecer el directorio de trabajo
-WORKDIR /var/www/html
+# Cambia el DocumentRoot a la carpeta public
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-# Instalar Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Habilita mod_rewrite (rutas Laravel)
+RUN a2enmod rewrite
 
-# Instalar dependencias de Laravel
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# Evita el warning del ServerName
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Configurar permisos adecuados
+# Permisos
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Exponer el puerto 80 para Apache
+# Define directorio de trabajo
+WORKDIR /var/www/html
+
+# Expone puerto 80
 EXPOSE 80
 
-# Comando para iniciar Apache
+# Inicia Apache
 CMD ["apache2-foreground"]
