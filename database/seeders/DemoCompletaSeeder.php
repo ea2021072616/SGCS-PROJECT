@@ -42,12 +42,13 @@ class DemoCompletaSeeder extends Seeder
         }
 
         // Obtener usuarios
-        $scrumMaster = Usuario::where('correo', 'sm.scrum@sgcs.com')->first();
-        $productOwner = Usuario::where('correo', 'po.scrum@sgcs.com')->first();
-        $pmCascada = Usuario::where('correo', 'pm.cascada@sgcs.com')->first();
-        $scmManager = Usuario::where('correo', 'scm.manager@sgcs.com')->first();
+        $admin = Usuario::where('correo', 'admin@sgcs.com')->first();
+        $scrumMaster = Usuario::where('correo', 'sm@sgcs.com')->first();
+        $productOwner = Usuario::where('correo', 'po@sgcs.com')->first();
+        $pmCascada = Usuario::where('correo', 'pm@sgcs.com')->first();
+        $scmManager = Usuario::where('correo', 'scm@sgcs.com')->first();
 
-        if (!$scrumMaster || !$productOwner || !$pmCascada || !$scmManager) {
+        if (!$admin || !$scrumMaster || !$productOwner) {
             $this->command->error('❌ Ejecuta primero UsuarioSeeder');
             return;
         }
@@ -69,27 +70,27 @@ class DemoCompletaSeeder extends Seeder
             'fecha_inicio' => Carbon::now()->subMonths(2),
             'fecha_fin' => Carbon::now()->addMonths(4),
             'link_repositorio' => 'https://github.com/sgcs-demo/ecommerce-platform',
-            'creado_por' => $productOwner->id,
+            'creado_por' => $admin->id,  // ADMIN es creador
         ]);
 
-        // Crear equipo Scrum
+        // Crear equipo Scrum con ADMIN como líder
         $equipoScrum = Equipo::firstOrCreate(
             ['proyecto_id' => $proyectoScrum->id, 'nombre' => 'E-Commerce Development Team'],
             [
                 'id' => Str::uuid()->toString(),
-                'lider_id' => $scrumMaster->id,
+                'lider_id' => $admin->id,  // ADMIN es líder del equipo
             ]
         );
 
-        // Asignar miembros al equipo Scrum
+        // Asignar miembros al equipo Scrum (incluyendo admin)
         $miembrosScrum = [
-            ['correo' => 'sm.scrum@sgcs.com', 'rol' => 'Scrum Master'],
-            ['correo' => 'po.scrum@sgcs.com', 'rol' => 'Product Owner'],
-            ['correo' => 'dev.senior.scrum@sgcs.com', 'rol' => 'Desarrollador Senior'],
-            ['correo' => 'dev1.scrum@sgcs.com', 'rol' => 'Desarrollador'],
-            ['correo' => 'dev2.scrum@sgcs.com', 'rol' => 'Desarrollador'],
-            ['correo' => 'qa.scrum@sgcs.com', 'rol' => 'Analista QA'],
-            ['correo' => 'tester.scrum@sgcs.com', 'rol' => 'Tester'],
+            ['correo' => 'admin@sgcs.com', 'rol' => 'Product Owner'],  // ADMIN en el equipo
+            ['correo' => 'sm@sgcs.com', 'rol' => 'Scrum Master'],
+            ['correo' => 'po@sgcs.com', 'rol' => 'Product Owner'],
+            ['correo' => 'dev1@sgcs.com', 'rol' => 'Desarrollador Senior'],
+            ['correo' => 'dev2@sgcs.com', 'rol' => 'Desarrollador'],
+            ['correo' => 'dev3@sgcs.com', 'rol' => 'Desarrollador'],
+            ['correo' => 'qa@sgcs.com', 'rol' => 'Analista QA'],
         ];
 
         foreach ($miembrosScrum as $miembro) {
@@ -135,28 +136,29 @@ class DemoCompletaSeeder extends Seeder
             'fecha_inicio' => Carbon::now()->subMonths(3),
             'fecha_fin' => Carbon::now()->addMonths(9),
             'link_repositorio' => 'https://github.com/sgcs-demo/erp-corporativo',
-            'creado_por' => $pmCascada->id,
+            'creado_por' => $admin->id,  // ADMIN es creador
         ]);
 
-        // Crear equipo Cascada
+        // Crear equipo Cascada con ADMIN como líder
         $equipoCascada = Equipo::firstOrCreate(
             ['proyecto_id' => $proyectoCascada->id, 'nombre' => 'ERP Implementation Team'],
             [
                 'id' => Str::uuid()->toString(),
-                'lider_id' => $pmCascada->id,
+                'lider_id' => $admin->id,  // ADMIN es líder del equipo
             ]
         );
 
-        // Asignar miembros al equipo Cascada
+        // Asignar miembros al equipo Cascada (incluyendo admin)
         $miembrosCascada = [
-            ['correo' => 'pm.cascada@sgcs.com', 'rol' => 'Líder de Proyecto'],
-            ['correo' => 'architect.cascada@sgcs.com', 'rol' => 'Arquitecto de Software'],
-            ['correo' => 'analyst.cascada@sgcs.com', 'rol' => 'Product Owner'],
-            ['correo' => 'dev.senior.cascada@sgcs.com', 'rol' => 'Desarrollador Senior'],
-            ['correo' => 'dev1.cascada@sgcs.com', 'rol' => 'Desarrollador'],
-            ['correo' => 'dev2.cascada@sgcs.com', 'rol' => 'Desarrollador'],
-            ['correo' => 'qa.cascada@sgcs.com', 'rol' => 'Analista QA'],
-            ['correo' => 'tester.cascada@sgcs.com', 'rol' => 'Tester'],
+            ['correo' => 'admin@sgcs.com', 'rol' => 'Líder de Proyecto'],  // ADMIN en el equipo
+            ['correo' => 'pm@sgcs.com', 'rol' => 'Líder de Proyecto'],
+            ['correo' => 'arch@sgcs.com', 'rol' => 'Arquitecto de Software'],
+            ['correo' => 'analyst@sgcs.com', 'rol' => 'Product Owner'],
+            ['correo' => 'dev1@sgcs.com', 'rol' => 'Desarrollador Senior'],
+            ['correo' => 'dev2@sgcs.com', 'rol' => 'Desarrollador'],
+            ['correo' => 'dev3@sgcs.com', 'rol' => 'Desarrollador'],
+            ['correo' => 'qa@sgcs.com', 'rol' => 'Analista QA'],
+            ['correo' => 'tester@sgcs.com', 'rol' => 'Tester'],
         ];
 
         foreach ($miembrosCascada as $miembro) {

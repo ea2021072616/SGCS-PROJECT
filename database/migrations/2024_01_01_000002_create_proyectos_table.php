@@ -46,9 +46,13 @@ return new class extends Migration
             $table->foreign('creado_por')->references('id')->on('usuarios');
         });
 
-        // Añadir FK de usuarios_roles a proyectos
+        // Agregar FKs pendientes ahora que proyectos existe
         Schema::table('usuarios_roles', function (Blueprint $table) {
-            $table->foreign('proyecto_id')->references('id')->on('proyectos');
+            $table->foreign('proyecto_id')->references('id')->on('proyectos')->onDelete('cascade');
+        });
+
+        Schema::table('roles', function (Blueprint $table) {
+            $table->foreign('metodologia_id')->references('id_metodologia')->on('metodologias')->onDelete('cascade');
         });
 
         // Tabla de equipos
@@ -75,17 +79,74 @@ return new class extends Migration
         // Tabla de tareas de proyecto
         Schema::create('tareas_proyecto', function (Blueprint $table) {
             $table->id('id_tarea');
+
+            // Información básica
+            $table->string('nombre', 255);
+            $table->text('descripcion')->nullable();
+
+            // Relaciones principales
             $table->char('id_proyecto', 36);
             $table->unsignedBigInteger('id_fase');
+            $table->unsignedBigInteger('id_sprint')->nullable()->comment('FK a sprints - Solo para Scrum');
             $table->char('id_ec', 36)->nullable();
             $table->char('responsable', 36)->nullable();
+
+            // Fechas
             $table->date('fecha_inicio')->nullable();
             $table->date('fecha_fin')->nullable();
+            $table->date('fecha_inicio_original')->nullable()->comment('Fecha original antes de ajustes automáticos');
+            $table->date('fecha_fin_original')->nullable()->comment('Fecha original antes de ajustes automáticos');
+
+            // Estado y prioridad
             $table->string('estado', 50)->nullable();
+            $table->integer('prioridad')->default(3);
+
+            // Campos ESPECÍFICOS por metodología (NULLABLES)
+            // Para SCRUM:
+            $table->integer('story_points')->nullable()->comment('Solo para Scrum');
+
+            // Para CASCADA:
+            $table->decimal('horas_estimadas', 8, 2)->nullable()->comment('Más usado en Cascada');
+            $table->string('entregable', 255)->nullable()->comment('Específico de Cascada');
+
+            // Campos para cronograma inteligente
+            $table->integer('duracion_minima')->nullable()->comment('Duración mínima posible en días');
+            $table->boolean('es_ruta_critica')->default(false)->comment('Indica si la tarea está en la ruta crítica');
+            $table->integer('holgura_dias')->default(0)->comment('Días de holgura (slack) - 0 para ruta crítica');
+            $table->boolean('puede_paralelizarse')->default(false)->comment('Indica si la tarea puede ejecutarse en paralelo con otras');
+            $table->json('dependencias')->nullable()->comment('IDs de tareas de las que depende esta tarea');
+            $table->decimal('progreso_real', 5, 2)->default(0)->comment('Porcentaje de progreso real (0-100)');
+
+            // Campos COMUNES (ambas metodologías)
+            $table->json('criterios_aceptacion')->nullable();
+            $table->text('notas')->nullable();
+
+            // Campo para almacenar la URL del commit cuando el desarrollador completa la tarea
+            $table->text('commit_url')->nullable();
+
+            // Campo para almacenar el ID del commit registrado (opcional)
+            $table->char('commit_id', 36)->nullable();
+
+            // Usuario que creó la tarea
+            $table->char('creado_por', 36)->nullable();
+
+            // Timestamps
+            $table->timestamp('creado_en')->useCurrent();
+            $table->timestamp('actualizado_en')->useCurrent()->useCurrentOnUpdate();
+
+            // Foreign keys
             $table->foreign('id_proyecto')->references('id')->on('proyectos');
             $table->foreign('id_fase')->references('id_fase')->on('fases_metodologia');
+            // FK id_sprint se agregará después cuando exista tabla sprints
             // FK a elementos_configuracion se añadirá después
             $table->foreign('responsable')->references('id')->on('usuarios');
+            $table->foreign('creado_por')->references('id')->on('usuarios')->onDelete('set null');
+            // FK commit_id se agregará después cuando exista tabla commits_repositorio
+
+            // Índices para optimizar consultas
+            $table->index('es_ruta_critica');
+            $table->index(['fecha_inicio', 'fecha_fin']);
+            $table->index('id_sprint');
         });
 
         // Tabla de plantillas EC (catálogo de EC base por metodología)

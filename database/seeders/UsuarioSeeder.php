@@ -10,156 +10,113 @@ class UsuarioSeeder extends Seeder
 {
     public function run(): void
     {
-        // USUARIOS PROFESIONALES PARA DEMOSTRACIÓN COMPLETA DEL SGCS
-        
-        // Gestor de Configuración
-        Usuario::firstOrCreate(['correo' => 'scm.manager@sgcs.com'], [
+        $this->command->info('👤 Creando usuarios...');
+
+        // ============================================
+        // SUPER USUARIO - ADMINISTRADOR GENERAL
+        // ============================================
+        Usuario::firstOrCreate(['correo' => 'admin@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Carlos Méndez',
+            'nombre_completo' => 'Administrador SGCS',
+            'contrasena_hash' => Hash::make('admin123'),
+            'correo_verificado_en' => now(),
+        ]);
+
+        // Gestor de Configuración
+        Usuario::firstOrCreate(['correo' => 'scm@sgcs.com'], [
+            'id' => Str::uuid()->toString(),
+            'nombre_completo' => 'Carlos Méndez - SCM Manager',
             'contrasena_hash' => Hash::make('scm123'),
             'correo_verificado_en' => now(),
         ]);
 
         // Administrador CCB
-        Usuario::firstOrCreate(['correo' => 'ccb.admin@sgcs.com'], [
+        Usuario::firstOrCreate(['correo' => 'ccb@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Ana Patricia López',
+            'nombre_completo' => 'Ana López - CCB Admin',
             'contrasena_hash' => Hash::make('ccb123'),
             'correo_verificado_en' => now(),
         ]);
 
-        // === EQUIPO PROYECTO SCRUM ===
-        
-        // Product Owner - Scrum
-        Usuario::firstOrCreate(['correo' => 'po.scrum@sgcs.com'], [
+        // Product Owner
+        Usuario::firstOrCreate(['correo' => 'po@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'María González',
+            'nombre_completo' => 'María González - Product Owner',
             'contrasena_hash' => Hash::make('po123'),
             'correo_verificado_en' => now(),
         ]);
 
         // Scrum Master
-        Usuario::firstOrCreate(['correo' => 'sm.scrum@sgcs.com'], [
+        Usuario::firstOrCreate(['correo' => 'sm@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Roberto Castillo',
+            'nombre_completo' => 'Roberto Castillo - Scrum Master',
             'contrasena_hash' => Hash::make('sm123'),
             'correo_verificado_en' => now(),
         ]);
 
-        // Desarrolladores Scrum
-        Usuario::firstOrCreate(['correo' => 'dev.senior.scrum@sgcs.com'], [
+        // Desarrolladores
+        Usuario::firstOrCreate(['correo' => 'dev1@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Luis Hernández',
+            'nombre_completo' => 'Luis Hernández - Dev Senior',
             'contrasena_hash' => Hash::make('dev123'),
             'correo_verificado_en' => now(),
         ]);
 
-        Usuario::firstOrCreate(['correo' => 'dev1.scrum@sgcs.com'], [
+        Usuario::firstOrCreate(['correo' => 'dev2@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Carmen Ruiz',
+            'nombre_completo' => 'Carmen Ruiz - Developer',
             'contrasena_hash' => Hash::make('dev123'),
             'correo_verificado_en' => now(),
         ]);
 
-        Usuario::firstOrCreate(['correo' => 'dev2.scrum@sgcs.com'], [
+        Usuario::firstOrCreate(['correo' => 'dev3@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Diego Morales',
+            'nombre_completo' => 'Diego Morales - Developer',
             'contrasena_hash' => Hash::make('dev123'),
             'correo_verificado_en' => now(),
         ]);
 
-        // QA Scrum
-        Usuario::firstOrCreate(['correo' => 'qa.scrum@sgcs.com'], [
+        // QA
+        Usuario::firstOrCreate(['correo' => 'qa@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Patricia Vega',
+            'nombre_completo' => 'Patricia Vega - QA Lead',
             'contrasena_hash' => Hash::make('qa123'),
             'correo_verificado_en' => now(),
         ]);
 
-        Usuario::firstOrCreate(['correo' => 'tester.scrum@sgcs.com'], [
+        // Project Manager
+        Usuario::firstOrCreate(['correo' => 'pm@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Jorge Ramírez',
-            'contrasena_hash' => Hash::make('test123'),
-            'correo_verificado_en' => now(),
-        ]);
-
-        // === EQUIPO PROYECTO CASCADA ===
-        
-        // Líder de Proyecto - Cascada
-        Usuario::firstOrCreate(['correo' => 'pm.cascada@sgcs.com'], [
-            'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Fernando Sánchez',
+            'nombre_completo' => 'Fernando Sánchez - Project Manager',
             'contrasena_hash' => Hash::make('pm123'),
             'correo_verificado_en' => now(),
         ]);
 
-        // Arquitecto de Software
-        Usuario::firstOrCreate(['correo' => 'architect.cascada@sgcs.com'], [
+        // Arquitecto
+        Usuario::firstOrCreate(['correo' => 'arch@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Dr. Alberto Jiménez',
+            'nombre_completo' => 'Alberto Jiménez - Arquitecto',
             'contrasena_hash' => Hash::make('arch123'),
             'correo_verificado_en' => now(),
         ]);
 
         // Analista
-        Usuario::firstOrCreate(['correo' => 'analyst.cascada@sgcs.com'], [
+        Usuario::firstOrCreate(['correo' => 'analyst@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Laura Martínez',
+            'nombre_completo' => 'Laura Martínez - Analista',
             'contrasena_hash' => Hash::make('analyst123'),
             'correo_verificado_en' => now(),
         ]);
 
-        // Desarrolladores Cascada
-        Usuario::firstOrCreate(['correo' => 'dev.senior.cascada@sgcs.com'], [
+        // Tester
+        Usuario::firstOrCreate(['correo' => 'tester@sgcs.com'], [
             'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Andrés Ortiz',
-            'contrasena_hash' => Hash::make('dev123'),
-            'correo_verificado_en' => now(),
-        ]);
-
-        Usuario::firstOrCreate(['correo' => 'dev1.cascada@sgcs.com'], [
-            'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Sofía Gutiérrez',
-            'contrasena_hash' => Hash::make('dev123'),
-            'correo_verificado_en' => now(),
-        ]);
-
-        Usuario::firstOrCreate(['correo' => 'dev2.cascada@sgcs.com'], [
-            'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Miguel Ángel Torres',
-            'contrasena_hash' => Hash::make('dev123'),
-            'correo_verificado_en' => now(),
-        ]);
-
-        // QA y Testing Cascada
-        Usuario::firstOrCreate(['correo' => 'qa.cascada@sgcs.com'], [
-            'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Gabriela Rojas',
-            'contrasena_hash' => Hash::make('qa123'),
-            'correo_verificado_en' => now(),
-        ]);
-
-        Usuario::firstOrCreate(['correo' => 'tester.cascada@sgcs.com'], [
-            'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Ricardo Pérez',
+            'nombre_completo' => 'Ricardo Pérez - Tester',
             'contrasena_hash' => Hash::make('test123'),
             'correo_verificado_en' => now(),
         ]);
 
-        // Release Manager
-        Usuario::firstOrCreate(['correo' => 'release.manager@sgcs.com'], [
-            'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Elena Vargas',
-            'contrasena_hash' => Hash::make('release123'),
-            'correo_verificado_en' => now(),
-        ]);
-
-        // Auditor de Configuración
-        Usuario::firstOrCreate(['correo' => 'auditor@sgcs.com'], [
-            'id' => Str::uuid()->toString(),
-            'nombre_completo' => 'Lic. Javier Campos',
-            'contrasena_hash' => Hash::make('audit123'),
-            'correo_verificado_en' => now(),
-        ]);
+        $this->command->info("   ✅ Usuarios: " . Usuario::count());
+        $this->command->info('   📧 SUPER USUARIO: admin@sgcs.com / admin123');
     }
 }

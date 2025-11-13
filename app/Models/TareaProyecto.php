@@ -9,7 +9,7 @@ class TareaProyecto extends Model
 {
     protected $table = 'tareas_proyecto';
     protected $primaryKey = 'id_tarea';
-    public $timestamps = false; // Usamos creado_en y actualizado_en personalizados
+    public $timestamps = true; // Timestamps personalizados
 
     const CREATED_AT = 'creado_en';
     const UPDATED_AT = 'actualizado_en';
@@ -18,7 +18,7 @@ class TareaProyecto extends Model
         'id_proyecto',
         'id_fase',
         'id_ec',
-        'id_sprint',
+        'id_sprint',  // ← NUEVO: FK a sprints
         'nombre',
         'descripcion',
         'responsable',
@@ -28,7 +28,6 @@ class TareaProyecto extends Model
         'prioridad',
         // Campos específicos de Scrum
         'story_points',
-        'sprint',
         // Campos específicos de Cascada
         'horas_estimadas',
         'entregable',
@@ -95,19 +94,19 @@ class TareaProyecto extends Model
     }
 
     /**
+     * Relación con Sprint (solo para proyectos Scrum)
+     */
+    public function sprint(): BelongsTo
+    {
+        return $this->belongsTo(Sprint::class, 'id_sprint');
+    }
+
+    /**
      * Relación con Usuario (responsable)
      */
     public function responsableUsuario(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'responsable', 'id');
-    }
-
-    /**
-     * Relación con Sprint (para metodología Scrum)
-     */
-    public function sprintModel(): BelongsTo
-    {
-        return $this->belongsTo(Sprint::class, 'id_sprint', 'id_sprint');
     }
 
     /**
@@ -135,11 +134,11 @@ class TareaProyecto extends Model
     }
 
     /**
-     * Scope para filtrar por sprint
+     * Scope para filtrar por sprint (por ID)
      */
-    public function scopeSprint($query, $sprint)
+    public function scopeSprint($query, $idSprint)
     {
-        return $query->where('sprint', $sprint);
+        return $query->where('id_sprint', $idSprint);
     }
 
     /**

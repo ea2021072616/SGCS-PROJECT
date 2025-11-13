@@ -63,6 +63,14 @@ class Sprint extends Model
     const UPDATED_AT = 'actualizado_en';
 
     /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'id_sprint';
+    }
+
+    /**
      * Estados posibles del sprint.
      */
     const ESTADOS = [
@@ -86,6 +94,14 @@ class Sprint extends Model
     public function userStories(): HasMany
     {
         return $this->hasMany(TareaProyecto::class, 'id_sprint', 'id_sprint');
+    }
+
+    /**
+     * Alias de userStories para compatibilidad
+     */
+    public function tareas(): HasMany
+    {
+        return $this->userStories();
     }
 
     /**

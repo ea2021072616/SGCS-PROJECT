@@ -36,6 +36,11 @@ return new class extends Migration
             $table->index('ec_id');
             $table->index('hash_commit');
         });
+
+        // Agregar FK de commit_id en tareas_proyecto ahora que commits_repositorio existe
+        Schema::table('tareas_proyecto', function (Blueprint $table) {
+            $table->foreign('commit_id')->references('id')->on('commits_repositorio')->onDelete('set null');
+        });
     }
 
     /**

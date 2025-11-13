@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="scripts">
-        <script src="/js/scrum-board.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </x-slot>
     <x-slot name="header">
         <div class="flex justify-between items-center">
@@ -12,9 +12,9 @@
                     {{ $proyecto->nombre }} • {{ $sprintActual }}
                 </p>
             </div>
-            <button onclick="modalNuevaTarea.showModal()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                + Nueva User Story
-            </button>
+            <a href="{{ route('scrum.sprint-planning', $proyecto) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                📋 Ir a Sprint Planning
+            </a>
         </div>
     </x-slot>
 
@@ -77,10 +77,10 @@
             <div class="bg-white rounded-lg shadow-sm border mb-6 p-4">
                 <div class="flex items-center gap-4">
                     <label class="text-sm font-medium text-gray-700">Sprint:</label>
-                    <select id="sprintSelector" class="select select-bordered select-sm bg-white">
+                    <select id="sprintSelector" class="select select-bordered select-sm bg-white text-gray-900">
                         @foreach($sprints as $sprint)
-                            <option value="{{ $sprint }}" {{ $sprint === $sprintActual ? 'selected' : '' }}>
-                                {{ $sprint }}
+                            <option value="{{ $sprint->nombre }}" {{ $sprint->nombre === $sprintActual ? 'selected' : '' }} class="text-gray-900">
+                                {{ $sprint->nombre }}
                             </option>
                         @endforeach
                     </select>
@@ -206,12 +206,8 @@
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">📈 Burndown Chart - {{ $sprintActual }}</h3>
 
-                    <div class="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-                        <div class="text-center text-gray-500">
-                            <div class="text-4xl mb-2"></div>
-                            <p>Gráfico Burndown Chart</p>
-                            <p class="text-sm">Story Points restantes: {{ $totalStoryPoints - $storyPointsCompletados }}</p>
-                        </div>
+                    <div class="h-64">
+                        <canvas id="burndownChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -219,113 +215,36 @@
         </div>
     </div>
 
-    <!-- Modal Nueva User Story -->
-    <dialog id="modalNuevaTarea" class="modal">
-        <div class="modal-box w-11/12 max-w-2xl bg-white">
-            <h3 class="font-bold text-lg text-black mb-4">Nueva User Story</h3>
 
-            <form method="POST" action="{{ route('proyectos.tareas.store', $proyecto) }}">
-                @csrf
-
-                <!-- Nombre de la User Story -->
-                <div class="form-control mb-4">
-                    <label class="label"><span class="label-text text-black font-semibold">Como [usuario], quiero [funcionalidad] para [beneficio]</span></label>
-                    <input type="text" name="nombre" class="input input-bordered w-full bg-white text-black"
-                           placeholder="Ej: Como usuario, quiero poder registrarme para acceder al sistema" required>
-                </div>
-
-                <!-- Descripción/Criterios de Aceptación -->
-                <div class="form-control mb-4">
-                    <label class="label"><span class="label-text text-black font-semibold">Criterios de Aceptación</span></label>
-                    <textarea name="descripcion" class="textarea textarea-bordered bg-white text-black" rows="4"
-                              placeholder="Dado que... Cuando... Entonces..."></textarea>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- Fase -->
-                    <div class="form-control">
-                        <label class="label"><span class="label-text text-black font-semibold">Estado</span></label>
-                        <select name="id_fase" class="select select-bordered bg-white text-black" required>
-                            @foreach($fases as $fase)
-                                <option value="{{ $fase->id_fase }}">{{ $fase->nombre_fase }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Story Points -->
-                    <div class="form-control">
-                        <label class="label"><span class="label-text text-black font-semibold">Story Points</span></label>
-                        <select name="story_points" class="select select-bordered bg-white text-black">
-                            <option value="">Sin estimar</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="5">5</option>
-                            <option value="8">8</option>
-                            <option value="13">13</option>
-                            <option value="21">21</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mt-4">
-                    <!-- Sprint -->
-                    <div class="form-control">
-                        <label class="label"><span class="label-text text-black font-semibold">Sprint</span></label>
-                        <select name="sprint" class="select select-bordered bg-white text-black">
-                            <option value="">Product Backlog</option>
-                            @foreach($sprints as $sprint)
-                                <option value="{{ $sprint }}" {{ $sprint === $sprintActual ? 'selected' : '' }}>{{ $sprint }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Prioridad -->
-                    <div class="form-control">
-                        <label class="label"><span class="label-text text-black font-semibold">Prioridad</span></label>
-                        <select name="prioridad" class="select select-bordered bg-white text-black">
-                            <option value="1">1 - Muy Baja</option>
-                            <option value="3">3 - Baja</option>
-                            <option value="5" selected>5 - Media</option>
-                            <option value="8">8 - Alta</option>
-                            <option value="10">10 - Muy Alta</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Responsable -->
-                <div class="form-control mt-4">
-                    <label class="label"><span class="label-text text-black font-semibold">Responsable</span></label>
-                    <select name="responsable" class="select select-bordered bg-white text-black">
-                        <option value="">Sin asignar</option>
-                        @foreach($miembrosEquipo as $miembro)
-                            <option value="{{ $miembro->id }}">{{ $miembro->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Botones -->
-                <div class="modal-action">
-                    <button type="button" onclick="modalNuevaTarea.close()" class="btn btn-ghost">Cancelar</button>
-                    <button type="submit" class="btn bg-blue-600 text-white hover:bg-blue-700">Crear User Story</button>
-                </div>
-            </form>
-        </div>
-        <form method="dialog" class="modal-backdrop">
-            <button>Cerrar</button>
-        </form>
-    </dialog>
 
     <!-- Modal Nuevo Sprint -->
-        <!-- Modal Nuevo Sprint -->
     <dialog id="modalNuevoSprint" class="modal">
         <div class="modal-box bg-white">
-            <h3 class="font-bold text-lg text-black">Nuevo Sprint</h3>
+            <h3 class="font-bold text-lg text-black mb-4">Nuevo Sprint</h3>
+
             <div class="form-control mt-4">
-                <label class="label"><span class="label-text text-black">Nombre del Sprint</span></label>
+                <label class="label"><span class="label-text text-black font-semibold">Nombre del Sprint</span></label>
                 <input type="text" id="nombreNuevoSprint" class="input input-bordered bg-white text-black"
-                       placeholder="Sprint 2">
+                       placeholder="Sprint 4" required>
             </div>
+
+            <div class="form-control mt-4">
+                <label class="label"><span class="label-text text-black font-semibold">Objetivo del Sprint</span></label>
+                <textarea id="objetivoNuevoSprint" class="textarea textarea-bordered bg-white text-black" rows="2"
+                          placeholder="¿Qué se logrará en este sprint?"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div class="form-control">
+                    <label class="label"><span class="label-text text-black font-semibold">Fecha Inicio</span></label>
+                    <input type="date" id="fechaInicioSprint" class="input input-bordered bg-white text-black" required>
+                </div>
+                <div class="form-control">
+                    <label class="label"><span class="label-text text-black font-semibold">Fecha Fin</span></label>
+                    <input type="date" id="fechaFinSprint" class="input input-bordered bg-white text-black" required>
+                </div>
+            </div>
+
             <div class="modal-action">
                 <button type="button" onclick="modalNuevoSprint.close()" class="btn btn-ghost">Cancelar</button>
                 <button type="button" onclick="crearNuevoSprint()" class="btn bg-blue-600 text-white hover:bg-blue-700">Crear Sprint</button>
@@ -397,6 +316,33 @@
     </dialog>
 
     <script>
+        // Función para mostrar notificaciones bonitas
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 ${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md`;
+            notification.style.animation = 'slideIn 0.3s ease-out';
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="text-xl">${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
         // Drag and Drop para el tablero Scrum
         document.addEventListener('DOMContentLoaded', function() {
             // Hacer cards arrastrarables
@@ -423,9 +369,26 @@
                     this.style.backgroundColor = '#f8fafc';
                     const tareaId = e.dataTransfer.getData('text/plain');
                     const nuevaFase = this.closest('.scrum-column').dataset.faseId;
+
+                    // Quitar mensaje "No hay user stories" si existe
+                    const emptyMessage = this.querySelector('.text-center.py-8');
+                    if (emptyMessage) {
+                        emptyMessage.remove();
+                    }
+
                     actualizarFaseTarea(tareaId, nuevaFase, this);
                 });
             });
+
+            // CAMBIO DE SPRINT - Agregado aquí dentro del DOMContentLoaded
+            const sprintSelector = document.getElementById('sprintSelector');
+            if (sprintSelector) {
+                sprintSelector.addEventListener('change', function() {
+                    const sprintSeleccionado = this.value;
+                    const proyectoId = '{{ $proyecto->id }}';
+                    window.location.href = `/proyectos/${proyectoId}/scrum/dashboard?sprint=${sprintSeleccionado}`;
+                });
+            }
         });
 
         function actualizarFaseTarea(tareaId, nuevaFase, dropZone) {
@@ -460,13 +423,13 @@
             const nuevaFase = document.getElementById('faseIdParaCommit').value;
 
             if (!commitUrl) {
-                alert('❌ Por favor, ingresa la URL del commit.');
+                showNotification('Por favor, ingresa la URL del commit', 'error');
                 return;
             }
 
             // Validar que sea de GitHub
             if (!commitUrl.includes('github.com')) {
-                alert('❌ La URL debe ser de GitHub (github.com)');
+                showNotification('La URL debe ser de GitHub (github.com)', 'error');
                 return;
             }
 
@@ -519,12 +482,12 @@
                     const card = document.querySelector(`.scrum-card[data-tarea-id='${tareaId}']`);
                     if (card && dropZone) dropZone.appendChild(card);
                 } else {
-                    alert('Error al mover la tarea: ' + (data.error || data.message || ''));
+                    showNotification('Error al mover la tarea: ' + (data.error || data.message || ''), 'error');
                     location.reload();
                 }
             })
             .catch(() => {
-                alert('Error al mover la tarea');
+                showNotification('Error al mover la tarea', 'error');
                 location.reload();
             });
         }
@@ -598,22 +561,196 @@
         }
 
         function crearNuevoSprint() {
-            const nombreSprint = document.getElementById('nombreNuevoSprint').value;
-            if (nombreSprint.trim()) {
-                // Implementar creación de nuevo sprint
-                console.log(`Crear sprint: ${nombreSprint}`);
-                modalNuevoSprint.close();
+            const nombre = document.getElementById('nombreNuevoSprint').value.trim();
+            const objetivo = document.getElementById('objetivoNuevoSprint').value.trim();
+            const fechaInicio = document.getElementById('fechaInicioSprint').value;
+            const fechaFin = document.getElementById('fechaFinSprint').value;
+
+            if (!nombre) {
+                showNotification('Por favor, ingresa el nombre del sprint', 'warning');
+                return;
             }
+
+            if (!fechaInicio || !fechaFin) {
+                showNotification('Por favor, selecciona las fechas de inicio y fin', 'warning');
+                return;
+            }
+
+            if (new Date(fechaFin) <= new Date(fechaInicio)) {
+                showNotification('La fecha de fin debe ser posterior a la de inicio', 'warning');
+                return;
+            }
+
+            // Enviar solicitud AJAX para crear el sprint
+            fetch(`/proyectos/{{ $proyecto->id }}/scrum/sprints`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    objetivo: objetivo || 'Sprint objetivo',
+                    fecha_inicio: fechaInicio,
+                    fecha_fin: fechaFin,
+                    velocidad_estimada: 0
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    modalNuevoSprint.close();
+                    showNotification(`${nombre} creado exitosamente`, 'success');
+                    location.reload();
+                } else {
+                    showNotification('Error al crear el sprint: ' + (data.message || 'Error desconocido'), 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showNotification('Error al crear el sprint', 'error');
+            });
         }
 
-        // Cambio de sprint
-        document.getElementById('sprintSelector')?.addEventListener('change', function() {
-            const sprintSeleccionado = this.value;
-            window.location.href = `{{ route('scrum.dashboard', $proyecto) }}?sprint=${sprintSeleccionado}`;
+        // Establecer fecha de inicio por defecto (hoy) al abrir el modal
+        document.getElementById('modalNuevoSprint')?.addEventListener('click', function(e) {
+            if (e.target === this) return; // Solo si se hace click en el backdrop
+
+            const today = new Date().toISOString().split('T')[0];
+            const twoWeeksLater = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+            if (!document.getElementById('fechaInicioSprint').value) {
+                document.getElementById('fechaInicioSprint').value = today;
+            }
+            if (!document.getElementById('fechaFinSprint').value) {
+                document.getElementById('fechaFinSprint').value = twoWeeksLater;
+            }
+        });
+
+        // Burndown Chart - Esperar a que Chart.js se cargue
+        window.addEventListener('load', function() {
+            const ctx = document.getElementById('burndownChart');
+            if (ctx && typeof Chart !== 'undefined') {
+                // Obtener datos del sprint activo
+                const totalStoryPoints = {{ $totalStoryPoints ?? 0 }};
+                const duracionSprint = {{ $sprintActivo ? $sprintActivo->duracion : 14 }};
+
+            // Crear labels de días
+            const labels = [];
+            for (let i = 0; i <= duracionSprint; i++) {
+                labels.push(`Día ${i}`);
+            }
+
+            // Línea ideal (decremento lineal)
+            const lineaIdeal = [];
+            for (let i = 0; i <= duracionSprint; i++) {
+                lineaIdeal.push(totalStoryPoints - (totalStoryPoints / duracionSprint * i));
+            }
+
+            // Línea actual (simulada - en producción vendría del backend)
+            const lineaActual = [totalStoryPoints];
+            const storyPointsRestantes = {{ $totalStoryPoints - $storyPointsCompletados }};
+
+            // Simular progreso hasta hoy
+            @if($sprintActivo && $sprintActivo->fecha_inicio)
+                const diasTranscurridos = Math.min(duracionSprint, Math.floor((new Date() - new Date("{{ $sprintActivo->fecha_inicio->format('Y-m-d') }}")) / (1000 * 60 * 60 * 24)));
+            @else
+                const diasTranscurridos = 0;
+            @endif
+
+            for (let i = 1; i <= duracionSprint; i++) {
+                if (i <= diasTranscurridos) {
+                    // Progreso real hasta hoy
+                    lineaActual.push(totalStoryPoints - (totalStoryPoints - storyPointsRestantes) * (i / diasTranscurridos));
+                } else {
+                    lineaActual.push(null); // Días futuros
+                }
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ideal',
+                        data: lineaIdeal,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderDash: [5, 5],
+                        tension: 0.1
+                    }, {
+                        label: 'Actual',
+                        data: lineaActual,
+                        borderColor: 'rgb(16, 185, 129)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + Math.round(context.parsed.y) + ' pts';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: totalStoryPoints + 5,
+                            ticks: {
+                                stepSize: 5
+                            },
+                            title: {
+                                display: true,
+                                text: 'Story Points'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Días del Sprint'
+                            }
+                        }
+                    }
+                }
+            });
+            }
         });
     </script>
 
     <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
         .scrum-column {
             background: #f8fafc;
             border-radius: 12px;

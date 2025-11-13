@@ -28,7 +28,7 @@ return new class extends Migration
             $table->char('proyecto_id', 36);
             $table->foreign('usuario_id')->references('id')->on('usuarios')->onDelete('cascade');
             $table->foreign('rol_id')->references('id')->on('roles')->onDelete('restrict');
-            // FK a proyectos se agregará después cuando exista la tabla
+            $table->foreign('proyecto_id')->references('id')->on('proyectos')->onDelete('cascade');
         });
     }
 

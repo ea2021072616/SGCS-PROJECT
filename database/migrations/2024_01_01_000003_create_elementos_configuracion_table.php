@@ -40,7 +40,7 @@ return new class extends Migration
             $table->text('registro_cambios')->nullable();
             $table->char('commit_id', 36)->nullable();
             $table->json('metadatos')->nullable();
-            $table->enum('estado', ['PENDIENTE','BORRADOR','EN_REVISION','APROBADO','LIBERADO','DEPRECADO'])->default('BORRADOR');
+            $table->enum('estado', ['PENDIENTE','BORRADOR','EN_REVISION','APROBADO','LIBERADO','OBSOLETO'])->default('BORRADOR');
             $table->char('creado_por', 36)->nullable();
             $table->char('aprobado_por', 36)->nullable();
             $table->timestamp('creado_en')->useCurrent();

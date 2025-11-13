@@ -141,6 +141,24 @@ class Proyecto extends Model
     }
 
     /**
+     * Relación: Un proyecto tiene muchos sprints (solo para Scrum).
+     */
+    public function sprints(): HasMany
+    {
+        return $this->hasMany(Sprint::class, 'id_proyecto', 'id');
+    }
+
+    /**
+     * Relación: Obtener el sprint activo actual del proyecto.
+     */
+    public function sprintActivo()
+    {
+        return $this->hasOne(Sprint::class, 'id_proyecto', 'id')
+            ->where('estado', 'activo')
+            ->latest('fecha_inicio');
+    }
+
+    /**
      * Relación: Un proyecto pertenece a un usuario creador.
      */
     public function creador()

@@ -28,6 +28,7 @@ return new class extends Migration
             $table->timestamp('actualizado_en')->useCurrent()->useCurrentOnUpdate();
 
             $table->foreign('id_proyecto')->references('id')->on('proyectos');
+            // FK id_sprint se agregará después cuando exista tabla sprints
             $table->foreign('id_usuario_reporta')->references('id')->on('usuarios');
             $table->foreign('id_usuario_asignado')->references('id')->on('usuarios');
         });

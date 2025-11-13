@@ -20,11 +20,26 @@ return new class extends Migration
             $table->enum('prioridad', ['BAJA', 'MEDIA', 'ALTA', 'CRITICA'])->default('MEDIA');
             $table->enum('estado', ['ABIERTA', 'EN_REVISION', 'APROBADA', 'RECHAZADA', 'IMPLEMENTADA', 'CERRADA'])->default('ABIERTA');
             $table->char('solicitante_id', 36)->nullable();
+            $table->string('origen_cambio')->nullable()->comment('Origen del cambio: Impedimento, Solicitud Cliente, etc.');
             $table->text('resumen_impacto')->nullable();
+
+            // Campos de auditoría para aprobación
+            $table->char('aprobado_por', 36)->nullable();
+            $table->timestamp('aprobado_en')->nullable();
+
+            // Campos de auditoría para rechazo
+            $table->char('rechazado_por', 36)->nullable();
+            $table->timestamp('rechazado_en')->nullable();
+            $table->text('motivo_rechazo')->nullable();
+
             $table->timestamp('creado_en')->useCurrent();
             $table->timestamp('actualizado_en')->useCurrent()->useCurrentOnUpdate();
+
+            // Foreign keys
             $table->foreign('proyecto_id')->references('id')->on('proyectos');
             $table->foreign('solicitante_id')->references('id')->on('usuarios');
+            $table->foreign('aprobado_por')->references('id')->on('usuarios');
+            $table->foreign('rechazado_por')->references('id')->on('usuarios');
         });
 
         Schema::create('items_cambio', function (Blueprint $table) {
@@ -51,7 +66,7 @@ return new class extends Migration
         Schema::create('miembros_ccb', function (Blueprint $table) {
             $table->char('ccb_id', 36);
             $table->char('usuario_id', 36);
-            $table->string('rol_en_ccb', 100)->nullable();
+            $table->string('rol_en_ccb', 100)->default('Miembro');
             $table->primary(['ccb_id', 'usuario_id']);
             $table->foreign('ccb_id')->references('id')->on('comite_cambios')->onDelete('cascade');
             $table->foreign('usuario_id')->references('id')->on('usuarios')->onDelete('cascade');

@@ -189,11 +189,23 @@ Route::middleware('auth')->group(function () {
 
     // Rutas específicas para metodología Scrum
     Route::prefix('proyectos/{proyecto}/scrum')->name('scrum.')->group(function () {
+        // Vistas
         Route::get('/dashboard', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'dashboard'])->name('dashboard');
         Route::get('/sprint-planning', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'sprintPlanning'])->name('sprint-planning');
         Route::get('/daily-scrum', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'dailyScrum'])->name('daily-scrum');
         Route::get('/sprint-review', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'sprintReview'])->name('sprint-review');
         Route::get('/sprint-retrospective', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'sprintRetrospective'])->name('sprint-retrospective');
+
+        // Acciones POST
+        Route::post('/sprints', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'storeSprint'])->name('sprints.store');
+        Route::post('/sprints/{sprint}/iniciar', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'iniciarSprint'])->name('sprints.iniciar');
+        Route::post('/sprints/{sprint}/completar', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'completarSprint'])->name('sprints.completar');
+        Route::post('/sprints/{sprint}/asignar-user-stories', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'asignarUserStories'])->name('sprints.asignar-user-stories');
+        Route::get('/sprints/{sprint}/user-stories', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'obtenerUserStoriesSprint'])->name('sprints.user-stories');
+        Route::post('/user-stories', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'storeUserStory'])->name('user-stories.store');
+        Route::patch('/user-stories/{tarea}', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'updateUserStory'])->name('user-stories.update');
+        Route::post('/user-stories/{tarea}/remover-sprint', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'removerUserStorySprint'])->name('user-stories.remover-sprint');
+        Route::post('/daily-scrums', [\App\Http\Controllers\GestionProyectos\ScrumController::class, 'storeDailyScrum'])->name('daily-scrums.store');
     });
 
     // Rutas específicas para metodología Cascada
