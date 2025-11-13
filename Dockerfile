@@ -1,35 +1,39 @@
 # Usa PHP con Apache
 FROM php:8.4-apache
 
-# --- Instalar dependencias del sistema ---
+# Instala dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    zip unzip git curl nodejs npm libpng-dev libonig-dev libxml2-dev libzip-dev && \
+    zip unzip git curl libpng-dev libonig-dev libxml2-dev libzip-dev nodejs npm && \
     docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# --- Instalar Composer ---
+# Instalar Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# --- Copiar el código del proyecto ---
+# Copiar proyecto
 COPY . /var/www/html
 
 WORKDIR /var/www/html
 
-# --- Instalar dependencias PHP ---
+# Instalar dependencias PHP
 RUN composer install --no-dev --optimize-autoloader
 
-# --- Instalar dependencias de Node/Vite ---
+# Instalar dependencias de Node y compilar frontend
 RUN npm install && npm run build
 
-# --- Configurar Apache para servir Laravel ---
+# Cambiar el DocumentRoot a /public
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+
+# Habilitar mod_rewrite
 RUN a2enmod rewrite
+
+# Evitar advertencia del ServerName
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# --- Permisos ---
+# Permisos correctos
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# --- Exponer puerto 80 ---
+# Exponer el puerto 80
 EXPOSE 80
 
-# --- Iniciar Apache ---
+# Iniciar Apache
 CMD ["apache2-foreground"]
