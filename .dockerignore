@@ -1,4 +1,16 @@
 vendor
 node_modules
 .env
-.git
+/storage/*.key
+/storage/*.pem
+/storage/debugbar
+/build
+/public/storage
+/.idea
+/.vscode
+/.git
+npm-debug.log
+composer.lock
+.DS_Store
+/.github
+/tests
