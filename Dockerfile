@@ -7,6 +7,10 @@ FROM node:20-bullseye AS node-build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --silent
+COPY resources ./resources
+COPY public ./public
+COPY vite.config.js ./
+RUN npm run build
 
 # Application build stage
 FROM php:8.2-fpm-bullseye AS base
@@ -32,11 +36,8 @@ COPY . /var/www/html
 # Install PHP deps
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# Build frontend assets
-COPY --from=node-build /app /app
-# Support Vite (vite.config.js or vite.config.ts). Use glob to copy either file.
-COPY resources/js resources/css package.json package-lock.json vite.config.* ./
-RUN npm ci --silent && npm run build || true
+# Copy built assets from node-build stage
+COPY --from=node-build /app/public/build ./public/build
 
 # Copy CA placeholder (optional) and entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
@@ -48,6 +49,7 @@ COPY deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/public
 
 EXPOSE 80
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
