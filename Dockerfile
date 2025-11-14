@@ -1,14 +1,16 @@
 # Multi-stage Dockerfile for Laravel optimized for Render
 
-# Builder: composer + node build
-FROM docker.io/composer:2.7 AS composer
-
+# Stage 1: Build frontend assets
 FROM node:20-bullseye AS node-build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --silent
+COPY vite.config.js postcss.config.js tailwind.config.js ./
+COPY resources ./resources
+COPY public ./public
+RUN npm run build
 
-# Application build stage
+# Stage 2: Application
 FROM php:8.2-fpm-bullseye AS base
 
 # system deps
@@ -21,27 +23,25 @@ RUN apt-get update && apt-get install -y \
 RUN docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip
 
 # Install composer
-COPY --from=composer /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 
 # Create app dir
 WORKDIR /var/www/html
 
-# Copy application files FIRST
+# Copy application files
 COPY . /var/www/html
 
 # Install PHP deps
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# Build frontend assets with node-build stage
-COPY --from=node-build /app/node_modules ./node_modules
-COPY resources/js resources/css package.json package-lock.json vite.config.js postcss.config.js tailwind.config.js ./
-RUN npm run build
+# Copy built frontend assets from node-build stage
+COPY --from=node-build /app/public/build ./public/build
 
-# Copy CA placeholder (optional) and entrypoint
+# Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Nginx config and supervisor
+# Copy nginx and supervisor configs
 COPY deploy/nginx.conf /etc/nginx/sites-available/default
 COPY deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
