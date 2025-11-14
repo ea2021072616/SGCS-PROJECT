@@ -26,17 +26,16 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 # Create app dir
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy application files FIRST
 COPY . /var/www/html
 
 # Install PHP deps
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# Build frontend assets
-COPY --from=node-build /app /app
-# Support Vite (vite.config.js or vite.config.ts). Use glob to copy either file.
-COPY resources/js resources/css package.json package-lock.json vite.config.* ./
-RUN npm ci --silent && npm run build || true
+# Build frontend assets with node-build stage
+COPY --from=node-build /app/node_modules ./node_modules
+COPY resources/js resources/css package.json package-lock.json vite.config.js postcss.config.js tailwind.config.js ./
+RUN npm run build
 
 # Copy CA placeholder (optional) and entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
@@ -47,7 +46,7 @@ COPY deploy/nginx.conf /etc/nginx/sites-available/default
 COPY deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public
 
 EXPOSE 80
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
