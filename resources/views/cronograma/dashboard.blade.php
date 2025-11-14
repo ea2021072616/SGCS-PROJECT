@@ -2,6 +2,40 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
+            <!-- Mensajes Flash -->
+            @if(session('success'))
+                <div class="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-green-800 font-medium">{{ session('success') }}</p>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-red-800 font-medium">{{ session('error') }}</p>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('warning'))
+                <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-yellow-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <p class="text-yellow-800 font-medium">{{ session('warning') }}</p>
+                    </div>
+                </div>
+            @endif
+
             <!-- Breadcrumb -->
             <div class="mb-4 flex items-center gap-2 text-sm">
                 <a href="{{ route('proyectos.index') }}" class="text-indigo-600 hover:text-indigo-800 font-medium">Proyectos</a>
@@ -36,13 +70,13 @@
                             </svg>
                             Historial
                         </a>
-                        <form action="{{ route('proyectos.cronograma.generar', $proyecto) }}" method="POST">
+                        <form action="{{ route('proyectos.cronograma.generar', $proyecto) }}" method="POST" id="formGenerarAjuste">
                             @csrf
-                            <button type="submit" class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-lg shadow-md transition flex items-center gap-2">
+                            <button type="submit" class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-lg shadow-md transition flex items-center gap-2" id="btnGenerarAjuste">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                 </svg>
-                                Generar Ajuste Automático
+                                <span id="btnText">Generar Ajuste Automático</span>
                             </button>
                         </form>
                     </div>
@@ -259,4 +293,40 @@
 
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('formGenerarAjuste');
+            const btn = document.getElementById('btnGenerarAjuste');
+            const btnText = document.getElementById('btnText');
+            
+            console.log('Dashboard loaded:', {form, btn, btnText});
+            console.log('Form action:', form?.action);
+            console.log('Form method:', form?.method);
+            
+            if (form && btn) {
+                form.addEventListener('submit', function(e) {
+                    console.log('Form submit triggered!', e);
+                    console.log('Form data:', new FormData(form));
+                    
+                    // Deshabilitar botón y mostrar loading
+                    btn.disabled = true;
+                    btn.classList.add('opacity-75', 'cursor-not-allowed');
+                    btnText.textContent = 'Generando ajuste...';
+                    
+                    // Mostrar spinner
+                    const spinner = document.createElement('svg');
+                    spinner.classList.add('animate-spin', 'h-5', 'w-5', 'text-white');
+                    spinner.innerHTML = '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>';
+                    btn.querySelector('svg').replaceWith(spinner);
+                    
+                    console.log('Loading state applied');
+                });
+            } else {
+                console.error('Form elements not found!');
+            }
+        });
+    </script>
+    @endpush
 </x-app-layout>

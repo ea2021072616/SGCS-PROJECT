@@ -66,6 +66,12 @@ class CronogramaInteligenteController extends Controller
     public function generar(Request $request, Proyecto $proyecto)
     {
         try {
+            Log::info('Iniciando generación de ajuste automático', [
+                'proyecto_id' => $proyecto->id,
+                'proyecto_nombre' => $proyecto->nombre,
+                'usuario_id' => Auth::id(),
+            ]);
+
             $opciones = $request->only([
                 'permitir_compresion',
                 'permitir_paralelizacion',
@@ -73,9 +79,11 @@ class CronogramaInteligenteController extends Controller
                 'max_compresion_porcentaje',
                 'max_aumento_horas',
             ]);
+            
             if (!is_array($opciones)) {
                 $opciones = [];
             }
+            
             // Convertir strings a booleanos
             foreach (['permitir_compresion', 'permitir_paralelizacion', 'permitir_reasignacion'] as $key) {
                 if (isset($opciones[$key])) {
@@ -88,17 +96,35 @@ class CronogramaInteligenteController extends Controller
                 $opciones['estrategia'] = $request->estrategia;
             }
 
+            Log::info('Opciones de ajuste', ['opciones' => $opciones]);
+
+            // Generar el ajuste
             $ajuste = $this->cronogramaService->generarAjuste($proyecto, $opciones);
 
             if (!$ajuste) {
-                return redirect()->back()->with('warning', 'No se detectaron problemas que requieran ajuste.');
+                Log::warning('No se generó ajuste - sin problemas detectados', [
+                    'proyecto_id' => $proyecto->id,
+                ]);
+                return redirect()->back()->with('warning', 'No se detectaron problemas que requieran ajuste automático. El cronograma está óptimo.');
             }
+
+            Log::info('Ajuste generado exitosamente', [
+                'ajuste_id' => $ajuste->id,
+                'estrategia' => $ajuste->estrategia,
+                'dias_recuperados' => $ajuste->dias_recuperados,
+            ]);
 
             return redirect()
                 ->route('proyectos.cronograma.ver-ajuste', ['proyecto' => $proyecto, 'ajuste' => $ajuste])
                 ->with('success', '✨ Ajuste generado exitosamente. Revisa la propuesta.');
+                
         } catch (\Exception $e) {
-            Log::error('Error al generar ajuste: ' . $e->getMessage());
+            Log::error('Error al generar ajuste', [
+                'proyecto_id' => $proyecto->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
             return redirect()->back()->with('error', 'Error al generar el ajuste: ' . $e->getMessage());
         }
     }    /**
