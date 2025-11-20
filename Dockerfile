@@ -32,6 +32,9 @@ WORKDIR /var/www/html
 # Copiar toda la aplicación primero
 COPY . .
 
+# Copiar archivo de entorno de producción
+COPY .env.production .env
+
 # Instalar dependencias de PHP
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
@@ -40,6 +43,9 @@ RUN npm ci
 
 # Compilar assets para producción
 RUN npm run build
+
+# Verificar que el manifest.json se haya creado
+RUN test -f public/build/manifest.json || (echo "ERROR: manifest.json no se generó" && exit 1)
 
 # Stage 2: Production - Imagen final
 FROM php:8.2-fpm

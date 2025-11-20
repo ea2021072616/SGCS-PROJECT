@@ -11,6 +11,16 @@ done
 
 echo "Base de datos conectada!"
 
+# Verificar que el manifest.json existe
+echo "Verificando assets compilados..."
+if [ ! -f /var/www/html/public/build/manifest.json ]; then
+    echo "ERROR: manifest.json no encontrado en /var/www/html/public/build/"
+    echo "Contenido del directorio build:"
+    ls -la /var/www/html/public/build/ || echo "Directorio build no existe"
+    exit 1
+fi
+echo "Assets verificados correctamente!"
+
 # Ejecutar migraciones
 echo "Ejecutando migraciones..."
 php artisan migrate --force
